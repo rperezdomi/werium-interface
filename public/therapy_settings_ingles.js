@@ -1,0 +1,195 @@
+const socket = io();
+
+//Call to database
+socket.emit('refreshlist');
+var patient_select = [];
+var therapist_select = [];
+var datapatients ={};
+var datatherapists={};
+
+var use_swalker_boolean;
+
+
+socket.on('patientdata',function(datapatient){
+    for (i = 0; i < datapatient.length; i++){
+        let patient = datapatient[i].NombrePaciente + " " + datapatient[i].ApellidoPaciente;
+        patient_select.push(patient);  
+    }
+
+    for(var i in patient_select)
+    { 
+        document.getElementById("patients-list").innerHTML += "<option value='"+patient_select[i]+"'>"+patient_select[i]+"</option>"; 
+    }
+    datapatients=datapatient;
+})
+
+socket.on('therapistdata',function(datatherapist){
+    //console.log(datatherapist);
+    for (i = 0; i < datatherapist.length; i++){
+        let therapist = datatherapist[i].NombreTerapeuta +" " +datatherapist[i].ApellidoTerapeuta;
+        therapist_select.push(therapist);
+    }
+ 
+    for(var i in therapist_select)
+    { 
+        document.getElementById("therapists-list").innerHTML += "<option value='"+therapist_select[i]+"'>"+therapist_select[i]+"</option>"; 
+    }
+    datatherapists=datatherapist;
+})
+
+socket.on('set_patient_info', (patient_info) =>  {
+    var patient_age = patient_info.patient_age;
+    var patient_weight = patient_info.patient_weight;
+    var patient_leg_length = patient_info.patient_leg_length;
+    var patient_hip_joint = patient_info.patient_hip_joint;
+    var patient_surgery = patient_info.patient_surgery;
+    document.getElementById("patient_age").value = patient_age.toString();
+    document.getElementById("weight").value = patient_weight.toString();
+    document.getElementById("leg_length").value = patient_leg_length.toString();
+    document.getElementById("hip_joint").value = patient_hip_joint.toString();
+    document.getElementById("surgery").value = patient_surgery.toString();
+
+})
+
+// Trigger modal
+$( document ).ready( function() {
+    $("#myModal").modal('show');
+    $('.modal-backdrop').appendTo('.modal_area');
+}); 
+
+// Prevent disapearing 
+$('#myModal').modal({
+    backdrop: 'static',
+    keyboard: false
+})
+
+window.onload = function(){ 
+    // Updates the therapist and patient name according to the selected names in the "login" popup.
+    
+    document.getElementById("login_therapist_patient").onclick = function() {
+        if  (document.getElementById("therapists-list").value == "no_choose" ||
+             document.getElementById("patients-list").value == "no_choose") {   
+                if  (document.getElementById("therapists-list").value == "no_choose") {
+                    document.getElementById("empty_therapist").innerHTML = "Select a therapist or login a new one."
+                }   
+                if  (document.getElementById("therapists-list").value != "no_choose") {
+                    document.getElementById("empty_therapist").innerHTML = ""
+                }                 
+                if (document.getElementById("patients-list").value == "no_choose") {    
+                    document.getElementById("empty_patient").innerHTML = "Select a patient or login a new one."
+                } 
+                if (document.getElementById("patients-list").value != "no_choose") {    
+                    document.getElementById("empty_patient").innerHTML = ""
+                } 
+        } else {
+            var therapist_name = document.getElementById("therapists-list");
+            var patient_name = document.getElementById("patients-list");
+            document.getElementById("therapist-name").innerHTML = therapist_name.value;
+            //document.getElementById("therapist_").innerHTML = therapist_name.value;
+            document.getElementById("patient-name").innerHTML = patient_name.value;
+
+            $('#myModal').modal('hide');
+            console.log(document.getElementById("patients-list").value);
+            socket.emit('get_patient_info', {
+                patient_name: document.getElementById("patients-list").value
+            })
+        }        
+    };
+
+    /*
+    document.getElementById("leg_length").onchange = function() {
+        setGaitVelocity()
+    };
+    */
+    
+    // Updates the value of the "rom" range input
+    /*
+    document.getElementById("rom").onchange = function() {
+        var rom = document.getElementById("rom").value;
+        setGaitVelocity()
+        document.getElementById("rom_value").innerHTML = rom + "%";
+    };
+    */
+
+	/*
+    // Updates the value of the "pbws" range input
+    document.getElementById("pbws").onchange = function() {
+        var pbws = document.getElementById("pbws").value;
+        document.getElementById("pbws_value").innerHTML = pbws + "%";
+    };
+	*/
+    // When the "save_settings" button is clicked, send all the configured parameters to the server 
+    document.getElementById("save_settings").onclick = function() {
+        // First click change colour
+        if (document.getElementById("save_settings").value == "save_settings") {
+			console.log("save settings clicked")
+            if (document.getElementById("observations").value == '') { 
+                var error = "Please fill the field: ";               
+                if (document.getElementById("surgery").value == '') {
+					error = error + " Observations + Type Of Surgery";
+				}
+              
+                document.getElementById("fild-undefined").innerHTML = error;
+                $("#modal-fild-undefined").modal('show');
+            } else {
+                document.getElementById("save_settings").value = "continue";
+                document.getElementById("save_settings").innerHTML = "Continue";
+                document.getElementById("save_settings").style.background = "#4CAF50";                 
+            }
+        // Second click send data
+        } else if (document.getElementById("save_settings").value == "continue") {            
+            // Send data to server
+            var d = new Date();
+            socket.emit('settings:save_settings', {
+                date: d.getTime(),
+                therapist_name: document.getElementById("therapists-list").value,
+                patient_name: document.getElementById("patients-list").value,
+                patient_age: document.getElementById("patient_age").value,
+                weight: document.getElementById("weight").value,
+                leg_length: document.getElementById("leg_length").value,
+                hip_upper_strap: 0,
+                knee_lower_strap: 0,
+                hip_joint: document.getElementById("hip_joint").value,
+                use_swalker: use_swalker_boolean,
+                gait_velocity: document.getElementById("velocity_value").value,
+                //pbws: document.getElementById("pbws").value,
+                pbws: "0",                 
+                observations: document.getElementById("observations").value,
+                surgery: document.getElementById("surgery").value
+            })
+            $("#modaltransferpatient").modal('show');
+            
+        }
+    };
+    $('#b_ok').on('click', function() {
+      // Redirect to the therapy monitoring window
+        location.replace("therapy_monitoring.html")
+    });
+};
+
+function setGaitVelocity(selectObject) {
+    var gait_velocity = selectObject.value; 
+    console.log(gait_velocity) 
+    if (gait_velocity == "slow"){
+        document.getElementById("velocity_ms_value").innerHTML = "0.068 (m/s)";
+    } else if (gait_velocity == "normal"){
+        document.getElementById("velocity_ms_value").innerHTML = "0.112 (m/s)";
+    } else if (gait_velocity == "high"){
+        document.getElementById("velocity_ms_value").innerHTML = "0.113 (m/s)";
+    } else if (gait_velocity == "none"){
+        document.getElementById("velocity_ms_value").innerHTML = " - ";
+    }
+ 
+}
+
+function setUseSwalkerBoolean(selectObject) {
+    var gait_velocity = selectObject.value; 
+    console.log(gait_velocity) 
+    if (gait_velocity == "yes"){
+        use_swalker_boolean = true;
+    } else if (gait_velocity == "no"){
+        use_swalker_boolean = false;
+        const $select = document.querySelector('#velocity_value');
+        $select.value = 'none';
+    } 
+}

@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>Unity WebGL Player | ExoCatalog</title>
+    <link rel="shortcut icon" href="Game1/TemplateData/favicon.ico">
+    <link rel="stylesheet" href="Game1/TemplateData/style.css">
+    
+    <!-- Modal -->
+    <script src="assets/js/jquery-3-4-1.min.js"></script>
+    <script src="assets/bootstrap/js/bootstrap.min.js"></script>
+
+    <link rel="stylesheet" href="assets/bootstrap/css/bootstrap.min.css?h=bc4d94717ae9f095f9e1df29e017c452">
+    <link rel="stylesheet" href="assets/css/google-fonts-nunito.css">
+    <link rel="stylesheet" href="assets/css/fontawesome-all.min.css">
+    <link rel="stylesheet" href="assets/css/google-fonts-montserrat.css">
+    <link rel="stylesheet" href="assets/css/cloudflareAjaxBaguetteboxbaguetteBox.min.css">
+    <link rel="stylesheet" href="assets/css/smoothproducts.css">
+    <link rel="stylesheet" href="assets/css/move_arrows.css">
+    <link rel="stylesheet" href="assets/css/button_styles.css">
+    <link rel="stylesheet" href="assets/css/stackpathBootstrapcdnBootstrap450Bootstrap.min.css">
+
+	
+    
+    <style>
+      .flex-container {
+        display: flex;
+        align-items: center; /* Use another value to see the result */
+        width: 80%;
+        height: 400px;
+      }
+    </style>
+    
+  </head>
+  <body>
+	  
+	<div id="wrapper">
+        
+		<nav class="navbar navbar-dark align-items-start sidebar sidebar-dark accordion bg-gradient-primary p-0">
+            <div class="container-fluid d-flex flex-column p-0">
+                <a class="navbar-brand d-flex justify-content-center align-items-center sidebar-brand m-0" href="#">
+                    <img class="img" style= "height:250%" src="assets/img/logoblanco.png">
+                    <div class="sidebar-brand-text mx-3"><span>Games</span></div>
+                </a>
+                <hr class="sidebar-divider my-0">
+                <ul class="nav navbar-nav text-light" id="accordionSidebar">
+                    <li class="nav-item" role="presentation"><a class="nav-link active" id="btn_inicio" href="javascript:void(0)"><i class="fas fa-arrow-left"></i><span> Página de inicio</span></a></li>
+                    <li class="nav-item" role="presentation"><a class="nav-link active" id="btn_juegos" href="index_games.html"><i class="fas fa-gamepad"></i><span><u> Juegos </u></span></a></li>
+                    <li class="nav-item" role="presentation"><a class="nav-link active" id="btn_usuarios" href="users_games.html"><i class="fas fa-child"></i><span> Usuarios </span></a></li>                    
+                </ul>
+                <div class="text-center d-none d-md-inline"><button class="btn rounded-circle border-0" id="sidebarToggle" type="button"></button></div>
+            </div>
+        </nav>
+		<div id="content-wrapper">
+			<div id="content" class="modal_area">
+
+				<div id="content">
+
+					<!-- Start: Modal login -->
+					<div id="myModal" class="modal fade" role = "dialog">
+						<div class="modal-dialog">
+							<div class="modal-content">
+								<div class="modal-body">
+									<div class="container card shadow-lg o-hidden border-0 my-5 p-5">
+										<div class="text-center">
+											<h4 class="text-dark mb-4">¡Hola! ¡Registrate, por favor!</h4>
+										</div>
+										<form class="user text-center">
+												<div class="form-group" >
+													<label> Usuario:  </label>
+													<br>
+													<select class="btn  btn-outline-primary" id="patients-list" class="form-control">
+														<option selected value="no_choose">Elige Usuario...</option>
+													</select>
+													<br>
+													<p id="empty_patient" style="color: red;"> </p>
+													<br>
+													<button class="btn  btn-primary" id ="login_therapist_patient" type="button" aria-label="Save">
+														<span>Guardar</span>
+													</button>
+												</div>
+										</form>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<nav class="navbar navbar-light navbar-expand shadow mb-4 topbar static-top" style="background-color: #4e73df;">
+						<div class="container-fluid">
+							<ul class="nav navbar-nav flex-nowrap ml-auto">
+								<div class="d-none d-sm-block topbar-divider"></div>
+								<li class="nav-item dropdown no-arrow" role="presentation">
+									<div class="nav-item dropdown no-arrow"><a class="dropdown-toggle nav-link" data-toggle="dropdown" aria-expanded="false" href="#"><img class="img" src="assets/img/letras.png" style= "height:80%"><img class="img" src="assets/img/logoblanco.png" style= "height:80%"></a>                         
+									</div>
+								</li>
+							</ul>
+						</div>
+					</nav>
+				</div>
+				<div class="card mb-3" align="left">
+						<div class="mb-3 d-flex centered">
+							<h4>Usuario: &nbsp;</h4>
+							<h4> </h4>
+							<h4 id="patient-name" style="color: #4e73df">Nombre del Paciente</h4>
+						</div>
+					   
+				</div>
+				<div class="mb-3 d-flex centered">
+					
+					
+					
+					<button class="btn btn-primary " value="off" id="connect_sensor" type="submit" style="margin:5px; background: #4e73df; border-color: #0968e4"> Conectar Sensor </button>
+			
+				</div>
+				<div align="center">
+					<div class = "flex-container" align="center">
+						 
+						<div align = "center" class= "container-fluid">
+							<p><b><span style="color: #4e73df">GAME 1</span></b></p>
+							<button class="btn-noStyle" type = "submit" name = "game1_button" value = "not_pressed"><a href="Game1/index_game1.html">
+								<img class="btn-square" src="assets/img/game1_screenshot.png" >
+							</a></button>
+						</div>
+						<div align = "center" class= "container-fluid">
+							<p><b><span style="color: #4e73df">GAME 2</span></b></p>
+							<button class="btn-noStyle" type = "submit" name = "game1_button" value = "not_pressed"><a href="Build/index.html">
+								<img class="btn-square" src="assets/img/exo_render.png" >
+							</a></button>
+						</div>
+						<div align = "center" class= "container-fluid">
+							<p><b><span style="color: #4e73df">GAME 3</span></b></p>
+							<button class="btn-noStyle" type = "submit" name = "game1_button" value = "not_pressed">
+								<img class="btn-square" src="assets/img/exo_render.png" >
+							</button>
+						</div>
+					</div>
+				</div>
+				<div align="center">
+					<div class = "flex-container" align="center">
+						<div align = "center" class= "container-fluid">
+								<p><b><span style="color: #4e73df">GAME 4</span></b></p>
+							<button class="btn-noStyle" type = "submit" name = "game1_button" value = "not_pressed">
+								<img class="btn-square" src="assets/img/exo_render.png" >
+							</button>
+						</div>
+						<div align = "center" class= "container-fluid">
+								<p><b><span style="color: #4e73df">GAME 5</span></b></p>
+							<button class="btn-noStyle" type = "submit" name = "game1_button" value = "not_pressed">
+								<img class="btn-square" src="assets/img/exo_render.png" >
+							</button>
+						</div>
+						<div align = "center" class= "container-fluid">
+								<p><b><span style="color: #4e73df">GAME 6</span></b></p>
+							<button class="btn-noStyle" type = "submit" name = "game1_button" value = "not_pressed">
+								<img class="btn-square" src="assets/img/exo_render.png" >
+							</button>
+						</div>
+					</div>
+				</div>
+			</div>	
+		</div>
+		
+	 </div>
+    <script src="socket.io/socket.io.js"></script>
+	<script src="index_games.js"></script>
+
+  </body>
+</html>
