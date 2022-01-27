@@ -34,7 +34,7 @@ $('#myModal').modal({
 	
 window.onload = function(){ 
 	
-	// Updates the therapist and patient name according to the selected names in the "login" popup.
+	// Update the patient name according to the selected names in the "login" popup.
     document.getElementById("login_therapist_patient").onclick = function() {
         if  (document.getElementById("patients-list").value == "no_choose") {                        
                 if (document.getElementById("patients-list").value == "no_choose") {    
@@ -54,7 +54,6 @@ window.onload = function(){
             })
         }        
     };
-    
     
 	socket.emit('games:mode_update', {
 		mode : 'games'
@@ -113,25 +112,25 @@ window.onload = function(){
 	document.getElementById("btn_inicio").onclick = function() {
 		if(is_sensor_connected){
 			socket.emit('games:disconnect_imu1');
-			// Redirect to the therapy monitoring window
-			location.replace("index.html");
 		}
+		// Redirect to the therapy monitoring window
+		location.replace("index.html");
 	}
 	
 	document.getElementById("btn_juegos").onclick = function() {
 		if(is_sensor_connected){
 			socket.emit('games:disconnect_imu1');
-			// Redirect to the therapy monitoring window
-			location.replace("index_games.html");
 		}
+		// Redirect to the therapy monitoring window
+		location.replace("index_games.html");
 	}
 	
 	document.getElementById("btn_usuarios").onclick = function() {
 		if(is_sensor_connected){
 			socket.emit('games:disconnect_imu1');
-			// Redirect to the therapy monitoring window
-			location.replace("users_games.html");
 		}
+		// Redirect to the therapy monitoring window
+		location.replace("users_games.html");
 	}
 
 }

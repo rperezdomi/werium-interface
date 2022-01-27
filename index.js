@@ -171,25 +171,12 @@ var data_session_id;
 var record_therapy = false;
 var time_stamp_vector = [];
 var therapy_speed = 's';
-
 // vars used to imus storage
-var imu1Bluetooth_NameAddress = [];
-var imu2Bluetooth_Nameddress = [];
-var imu3Bluetooth_NameAddress = [];
 var is_first_data = [true, true, true, true];   //sw, imu1, imu2, imu3
-var is_imu1_connected = false;
-var is_imu2_connected = false;
-var is_imu3_connected = false;
-var imu1_yaw_vector = [];
-var imu1_pitch_vector = [];
-var imu1_roll_vector = [];
-var imu2_yaw_vector = [];
-var imu2_pitch_vector = [];
-var imu2_roll_vector = [];
-var imu3_roll_vector = [];
-var imu3_yaw_vector = [];
-var imu3_pitch_vector = [];
-
+var is_imu1_connected = is_imu2_connected = is_imu3_connected = false;
+var imu1_yaw_vector = imu1_pitch_vector = imu1_roll_vector = [];
+var imu2_yaw_vector = imu2_pitch_vector = imu2_roll_vector = [];
+var imu3_roll_vector = imu3_yaw_vector = imu3_pitch_vector = [];
 // vars used for the imus data reception
 var ascii_msg_imu1;
 var imu1_yaw; 
@@ -203,32 +190,20 @@ var ascii_msg_imu3;
 var imu3_yaw; 
 var imu3_pitch;
 var imu3_roll;
-
 // vars used for swalker data storage
-var rom_left_vector= [];
-var rom_right_vector= [];
-var load_vector= [];
-var direction_vector = [];
- 
+var rom_left_vector = rom_right_vector = load_vector = direction_vector = [];
 // vars used for the swalker data reception
 var rom_left; 
 var rom_right; 
 var load;
 var ascii_msg;
-
-// vars used for user calibration
-var rom_left_calibration = 0;
-var rom_right_calibration = 0;
-
+// vars used for SWII calibration
+var rom_left_calibration = rom_right_calibration = 0;
 // session vars
-var load_session_rom_right = [];
-var load_session_rom_left = [];
-var load_session_weight_gauge = [];
-var load_session_rom_right_objects = [];
-var load_session_rom_left_objects = [];
-var load_session_weight_gauge_objects = [];
+var load_session_rom_right = load_session_rom_left = load_session_weight_gauge =[];
+var load_session_rom_right_objects = load_session_rom_left_objects = load_session_weight_gauge_objects = [];
 
-// vr vars
+// VR vars
 var sockets = Object.create(null);
 var udpServer_VR = net.createServer();
 udpServer_VR.listen(41235);
@@ -317,87 +292,105 @@ var dcm_msgData = "";
 var dcm_mode = false;
 // IMU1 data reception (bt)
 serial_imu1.on('data', function(data){ 
+	
+	// Check imu mode (DCM or ANGLES)
+	if (data.toString().includes("#")){
+		let key = data.toString().split('#')[1].substr(0,3)
+		if (key == 'DCM'){
+			dcm_mode = true;
+		} else if (key == 'YPR'){
+			dcm_mode = false;
+		}  
+	}
+	
+	// GAMES interface mode
 	if (mode_games){
+		
+		// In Games mode the DCM matrix is needed. 
 		if (!dcm_mode){
-			// enviamos comando #om para pasar a dcm
+			
+			// To change the imu streaming mode to DCM, the command "#om" must be sent
 			var buf = Buffer.from('#om', 'utf8');
 			serial_imu1.write(buf)
 			.then(() => console.log('Command "#om" successfully written'))
 			.catch((err) => console.log('Error en envío del cmando #om a imu', err))
 			
 			dcm_mode = true;
+		
+		// The imu streamming mode is already in DCM
+		} else{
 			
-		}else{
-			
+			// get the entire message from the received data ('#DCM= arg1, arg2...., arg10')
 			 ascii_msg_imu1 = hex2a_general(data, 10, lasthex_imu1, is_first_data[1]);
 			 lasthex_imu1 = ascii_msg_imu1[2];
 			 is_first_data[1] = ascii_msg_imu1[3];
 			 
+			 // ascii_msg_imu1[0] returns 0 if the data message is complete, and 1 if it is not.
 			 if (ascii_msg_imu1[0] == 0){	
 				let data_vector = ascii_msg_imu1[1].split('=')[1].split(',');
 				let data_key = ascii_msg_imu1[1].split('=')[0]
-			 
-				 if (data_key == "#DCM"){
-					//console.log(data_key);
-					//console.log(ascii_msg_imu1[1])
-					dcm_msgData = ascii_msg_imu1[1];
-					//console.log(dcm_msgData);
-				} else if(data_key == '#YPR'){
-					dcm_mode = false;
-				}
 				
+				// store the data message into "dcm_msgData" variable, which will be sent to the client socket games.
+				dcm_msgData = ascii_msg_imu1[1];	
 			}
-
-		}		
-    } else {
-		var items = 9;
-		ascii_msg_imu1 = hex2a_general(data, items, lasthex_imu1, is_first_data[1]);
-		lasthex_imu1 = ascii_msg_imu1[2];
-		is_first_data[1] = ascii_msg_imu1[3];
-
-		if (ascii_msg_imu1[0] == 0){	
-			let data_vector = ascii_msg_imu1[1].split('=')[1].split(',');
-			let data_key = ascii_msg_imu1[1].split('=')[0]
-			if (data_key == "#YPR"){
-				if (data_vector.length >= 3 ){
-					// Data storage
-					imu1_yaw = parseFloat(data_vector[0]);
-					imu1_pitch = parseFloat(data_vector[1]);
-					imu1_roll = parseFloat(data_vector[2]);
-					
-					if(record_therapy){
-						if(!is_swalker_connected & !is_delsys_connected){
-							time_stamp_vector.push(Date.now());
-							imu1_yaw_vector.push(parseFloat(imu1_yaw));
-							imu1_pitch_vector.push(parseFloat(imu1_pitch));
-							imu1_roll_vector.push(parseFloat(imu1_roll));
-									
-							if(is_imu2_connected){
-								imu2_pitch_vector.push(parseFloat(imu2_pitch));
-								imu2_roll_vector.push(parseFloat(imu2_roll));
-								imu2_yaw_vector.push(parseFloat(imu2_yaw));
-							}
+		}	
+    } 
+    
+	// SWalker interface mode	
+    if (mode_sw) {
+		
+		// In SWALKER mode the angles Yaw Pitch Roll are needed (imu mode #YPR)
+		if(!dcm_mode){
+			
+			// get the entire data message
+			let items = 9;
+			ascii_msg_imu1 = hex2a_general(data, items, lasthex_imu1, is_first_data[1]);
+			lasthex_imu1 = ascii_msg_imu1[2];
+			is_first_data[1] = ascii_msg_imu1[3];
+			
+			// if the message data is correct, then split it up and store angles data.
+			if (ascii_msg_imu1[0] == 0){	
+				
+				let data_vector = ascii_msg_imu1[1].split('=')[1].split(',');
+				let data_key = ascii_msg_imu1[1].split('=')[0]
+				
+				// Data storage
+				imu1_yaw = parseFloat(data_vector[0]);
+				imu1_pitch = parseFloat(data_vector[1]);
+				imu1_roll = parseFloat(data_vector[2]);
+				
+				if(record_therapy){
+					if(!is_swalker_connected & !is_delsys_connected){
+						time_stamp_vector.push(Date.now());
+						imu1_yaw_vector.push(parseFloat(imu1_yaw));
+						imu1_pitch_vector.push(parseFloat(imu1_pitch));
+						imu1_roll_vector.push(parseFloat(imu1_roll));
 								
-							if(is_imu3_connected){
-								imu3_pitch_vector.push(parseFloat(imu3_pitch));
-								imu3_roll_vector.push(parseFloat(imu3_roll));
-								imu3_yaw_vector.push(parseFloat(imu3_yaw));
-							}
+						if(is_imu2_connected){
+							imu2_pitch_vector.push(parseFloat(imu2_pitch));
+							imu2_roll_vector.push(parseFloat(imu2_roll));
+							imu2_yaw_vector.push(parseFloat(imu2_yaw));
+						}
+							
+						if(is_imu3_connected){
+							imu3_pitch_vector.push(parseFloat(imu3_pitch));
+							imu3_roll_vector.push(parseFloat(imu3_roll));
+							imu3_yaw_vector.push(parseFloat(imu3_yaw));
 						}
 					}
-					
-				} 
-			} else {  
-				console.log(data_key);
-				// enviamos comando #om para pasar a dcm
-				var buf = Buffer.from('#ot', 'utf8');
-				serial_imu1.write(buf)
-				.then(() => console.log('Command "#om" successfully written'))
-				.catch((err) => console.log('Error en envío del cmando #om a imu', err))
-				
-				dcm_mode = false;
-				// enviar comando para cambiar a YPR
+				}
 			}
+		
+		// The imu is streaming into #DCM mode
+		} else {
+			
+			// To change the imu streaming mode to YPR, the command "#ot" must be sent
+			var buf = Buffer.from('#ot', 'utf8');
+			serial_imu1.write(buf)
+			.then(() => console.log('Command "#ot" successfully written'))
+			.catch((err) => console.log('Error en envío del cmando #om a imu', err))
+			
+			dcm_mode = false;
 		}  
 	}
 }); 
@@ -421,83 +414,155 @@ serial_imu1.on('closed', function(){
 var data_imu2;
 var lasthex_imu2 = "";
 serial_imu2.on('data', function(data){ 
-	var items = 9; 
-    ascii_msg_imu2 = hex2a_general(data, items, lasthex_imu2, is_first_data[2])
-    lasthex_imu2 = ascii_msg_imu2[2];
-    is_first_data[2] = ascii_msg_imu2[3];
-
-    if (ascii_msg_imu2[0] == 0){
-
-    	let data_vector = ascii_msg_imu2[1].split('=')[1].split(',');
-    	if (data_vector.length >= 3){
-            // Data storage
-            imu2_yaw = parseFloat(data_vector[0]);
-            imu2_pitch = parseFloat(data_vector[1]);
-            imu2_roll = parseFloat(data_vector[2]);
-           
-           	if(record_therapy){
-				if((!is_swalker_connected & !is_delsys_connected )& !is_imu1_connected){
-					time_stamp_vector.push(Date.now());
-					imu2_yaw_vector.push(parseFloat(imu2_yaw));
-					imu2_pitch_vector.push(parseFloat(imu2_pitch));
-					imu2_roll_vector.push(parseFloat(imu2_roll));
-					
-					if(is_imu3_connected){
-						imu3_pitch_vector.push(parseFloat(imu3_pitch));
-						imu3_roll_vector.push(parseFloat(imu3_roll));
-						imu3_yaw_vector.push(parseFloat(imu3_yaw));
-					}
-						
-				}
+	
+	// Check imu mode (DCM or ANGLES)
+	if (data.toString().includes("#")){
+		let key = data.toString().split('#')[1].substr(0,3)
+		if (key == 'DCM'){
+			dcm_mode = true;
+		} else if (key == 'YPR'){
+			dcm_mode = false;
+		}  
+	}
+	
+	// SWalker interface mode	
+    if (mode_sw) {
+		
+		// In SWALKER mode the angles Yaw Pitch Roll are needed (imu mode #YPR)
+		if(!dcm_mode){
+			
+			// get the entire data message
+			let items = 9; 
+			ascii_msg_imu2 = hex2a_general(data, items, lasthex_imu2, is_first_data[2])
+			lasthex_imu2 = ascii_msg_imu2[2];
+			is_first_data[2] = ascii_msg_imu2[3];
+			
+			// if the message data is correct, then split it up and store angles data.
+			if (ascii_msg_imu2[0] == 0){	
 				
+				let data_vector = ascii_msg_imu2[1].split('=')[1].split(',');
+				let data_key = ascii_msg_imu2[1].split('=')[0]
+				
+				// Data storage
+				imu2_yaw = parseFloat(data_vector[0]);
+				imu2_pitch = parseFloat(data_vector[1]);
+				imu2_roll = parseFloat(data_vector[2]);
+			   
+				if(record_therapy){
+					if((!is_swalker_connected & !is_delsys_connected )& !is_imu1_connected){
+						time_stamp_vector.push(Date.now());
+						imu2_yaw_vector.push(parseFloat(imu2_yaw));
+						imu2_pitch_vector.push(parseFloat(imu2_pitch));
+						imu2_roll_vector.push(parseFloat(imu2_roll));
+						
+						if(is_imu3_connected){
+							imu3_pitch_vector.push(parseFloat(imu3_pitch));
+							imu3_roll_vector.push(parseFloat(imu3_roll));
+							imu3_yaw_vector.push(parseFloat(imu3_yaw));
+						}
+							
+					}
+					
+				}
 			}
-		} 
-    }
+		
+		// The imu is streaming into #DCM mode
+		} else {
+			
+			// To change the imu streaming mode to YPR, the command "#ot" must be sent
+			var buf = Buffer.from('#ot', 'utf8');
+			serial_imu1.write(buf)
+			.then(() => console.log('Command "#ot" successfully written'))
+			.catch((err) => console.log('Error en envío del cmando #om a imu', err))
+			
+			dcm_mode = false;
+		}  
+	}
 }); 
 serial_imu2.on('closed', function(){
-	is_imu2_connected = false;
+	
+	console.log("connection with imu2 closed");
+	
 	sockets['websocket'].emit('monitoring:connection_status',{
 		 device: "imu2",
 		 status:3
 	})  //disconnected 
-		
+	
+	disconnect_bt_device(sockets['websocket'], serial_imu2, is_imu2_connected, "imu2")
 })
+
 
 var data_imu3;
 var lasthex_imu3 = "";
 serial_imu3.on('data', function(data){ 
-	var items = 9;
-    ascii_msg_imu3 = hex2a_general(data, items, lasthex_imu3, is_first_data[3])
-    lasthex_imu3 = ascii_msg_imu3[2];
-    is_first_data[3] = ascii_msg_imu3[3];
-    if (ascii_msg_imu3[0] == 0){
-
-    	let data_vector = ascii_msg_imu3[1].split('=')[1].split(',');
-    	if (data_vector.length >= 3){
-            // Data storage
-            imu3_yaw = parseFloat(data_vector[0]);
-            imu3_pitch = parseFloat(data_vector[1]);
-            imu3_roll = parseFloat(data_vector[2]);
-           
-           	if(record_therapy){
-				if((!is_swalker_connected & !is_delsys_connected )& (!is_imu1_connected & !is_imu2_connected)){
-					time_stamp_vector.push(Date.now());
-					imu3_yaw_vector.push(parseFloat(imu3_yaw));
-					imu3_pitch_vector.push(parseFloat(imu3_pitch));
-					imu3_roll_vector.push(parseFloat(imu3_roll));
-						
-				}
+	
+	// Check imu mode (DCM or ANGLES)
+	if (data.toString().includes("#")){
+		let key = data.toString().split('#')[1].substr(0,3)
+		if (key == 'DCM'){
+			dcm_mode = true;
+		} else if (key == 'YPR'){
+			dcm_mode = false;
+		}  
+	}
+	
+	// SWalker interface mode	
+    if (mode_sw) {
+		
+		// In SWALKER mode the angles Yaw Pitch Roll are needed (imu mode #YPR)
+		if(!dcm_mode){
+			
+			// get the entire data message
+			let items = 9;
+			ascii_msg_imu3 = hex2a_general(data, items, lasthex_imu3, is_first_data[3])
+			lasthex_imu3 = ascii_msg_imu3[2];
+			is_first_data[3] = ascii_msg_imu3[3];
+			
+			// if the message data is correct, then split it up and store angles data.
+			if (ascii_msg_imu3[0] == 0){	
 				
+				let data_vector = ascii_msg_imu3[1].split('=')[1].split(',');
+				
+				 // Data storage
+				imu3_yaw = parseFloat(data_vector[0]);
+				imu3_pitch = parseFloat(data_vector[1]);
+				imu3_roll = parseFloat(data_vector[2]);
+			   
+				if(record_therapy){
+					if((!is_swalker_connected & !is_delsys_connected )& (!is_imu1_connected & !is_imu2_connected)){
+						time_stamp_vector.push(Date.now());
+						imu3_yaw_vector.push(parseFloat(imu3_yaw));
+						imu3_pitch_vector.push(parseFloat(imu3_pitch));
+						imu3_roll_vector.push(parseFloat(imu3_roll));
+							
+					}
+					
+				}
 			}
-		} 
-    }
+		
+		// The imu is streaming into #DCM mode
+		} else {
+			
+			// To change the imu streaming mode to YPR, the command "#ot" must be sent
+			var buf = Buffer.from('#ot', 'utf8');
+			serial_imu1.write(buf)
+			.then(() => console.log('Command "#ot" successfully written'))
+			.catch((err) => console.log('Error en envío del cmando #om a imu', err))
+			
+			dcm_mode = false;
+		}  
+	}
+	
 }); 
 serial_imu3.on('closed', function(){
-	is_imu3_connected = false;
+	console.log("connection with imu3 closed");
+	
 	sockets['websocket'].emit('monitoring:connection_status',{
 		 device: "imu3",
 		 status:3
 	})  //disconnected 
+	
+	disconnect_bt_device(sockets['websocket'], serial_imu3, is_imu3_connected, "imu3")
 		
 })
 
@@ -536,7 +601,6 @@ io.on('connection', (socket) => {
 		}) 
 		
 	} 
-    
     
     var datitos=[];
 
@@ -1424,12 +1488,6 @@ io.on('connection', (socket) => {
             con.connect(function(err) {
                 if (err) throw err;
                 console.log("Eliminado");
-                //var sql = "SELECT * FROM tabla_sesion JOIN tabla_pacientes ON tabla_sesion.idPaciente = tabla_pacientes.idtabla_pacientes JOIN tabla_terapeutas ON tabla_sesion.idTerapeuta = tabla_terapeutas.idtabla_terapeutas";
-               // con.query(sql, function (err, result) {
-                //  if (err) throw err;
-                  //console.log(result);
-                //  socket.emit('datostabla', result);
-               // });
 
             });
     });
@@ -1452,7 +1510,7 @@ io.on('connection', (socket) => {
         rom_right_vector = []
         rom_left_vector = []
 
-        is_swalker_connected = disconnect_bt_device(socket, serial_swalker, is_swalker_connected, "sw");
+        disconnect_bt_device(socket, serial_swalker, is_swalker_connected, "sw");
 
     });
     
@@ -1470,7 +1528,7 @@ io.on('connection', (socket) => {
         imu1_pitch_vector = []
         imu1_roll_vector = []
 
-        is_imu1_connected = disconnect_bt_device(socket, serial_imu1, is_imu1_connected, "imu1");
+       disconnect_bt_device(socket, serial_imu1, is_imu1_connected, "imu1");
        
     });
 
@@ -1486,7 +1544,7 @@ io.on('connection', (socket) => {
         imu2_pitch_vector = []
         imu2_roll_vector = []
 
-        is_imu2_connected = disconnect_bt_device(socket, serial_imu2, is_imu2_connected, "imu2");
+        disconnect_bt_device(socket, serial_imu2, is_imu2_connected, "imu2");
     });
     
     // Connect IMU 3
@@ -1501,20 +1559,20 @@ io.on('connection', (socket) => {
         imu3_pitch_vector = []
         imu3_roll_vector = []
 
-        is_imu3_connected = disconnect_bt_device(socket, serial_imu3, is_imu3_connected, "imu3");
+        disconnect_bt_device(socket, serial_imu3, is_imu3_connected, "imu3");
     });
 
 
     // Disconnect IMUS
     socket.on('monitoring:disconnect_imus', function(callbackFn) {
 			imu1_yaw_vector = imu1_pitch_vector = imu1_roll_vector = []
-			is_imu1_connected = disconnect_bt_device(socket, serial_imu1, is_imu1_connected, "imu1");
+			disconnect_bt_device(socket, serial_imu1, is_imu1_connected, "imu1");
 
 			imu2_yaw_vector = imu2_pitch_vector = imu2_roll_vector = []
-			is_imu2_connected = disconnect_bt_device(socket, serial_imu2, is_imu2_connected, "imu2");
+			disconnect_bt_device(socket, serial_imu2, is_imu2_connected, "imu2");
 			
 			imu3_yaw_vector = imu3_pitch_vector = imu3_roll_vector = []
-			is_imu3_connected = disconnect_bt_device(socket, serial_imu3, is_imu3_connected, "imu3");
+			disconnect_bt_device(socket, serial_imu3, is_imu3_connected, "imu3");
 		
     });
 
@@ -1725,10 +1783,6 @@ io_games.on('connection', (socket) => {
     pos_x_vector = [];
     pos_y_vector = [];
     pos_z_vector = [];
-    
-    //let data = {header: 'info',
-	//			data: "Hola!"}
-	//socket.send(JSON.stringify(data));
 	
 	// Send IMU data
     setInterval(function () {
@@ -1764,8 +1818,9 @@ io_games.on('connection', (socket) => {
 					DDBB_addSessionData()
 				}	
 				
-			} else if (receivedJSON.cabecera == 'games:objectives'){
+			} else if (receivedJSON.cabecera == 'games:objetives'){
 				DDBB_addObjectivesData(receivedJSON);
+				console.log("objetivo recibido!");
 				
 			} else {
 				console.log(receivedJSON);
@@ -1794,6 +1849,7 @@ function DDBB_addObjectivesData(objectives_data){
 	var sql = "INSERT INTO tabla_sesiones (id_sesion, n_objetivo, angulo_x, angulo_y, posicion_x, posicion_y, posicion_z, tiempo, alcanzado) VALUES " + insertDataRows;
 	con_games.query(sql, function (err, result) {	
 		if (err) throw err;
+	
 	});
 }
 function DDBB_addSessionData(){
@@ -2041,7 +2097,6 @@ function connect_bt_device(socket, bt_object, status_boolean, str_device){
 					}else {
 						if (device_name.substr(device_name.length -3) == "-PM"){
 							if(!connected_PMSensors_addresses.includes(device_address)){
-								console.log(device_name + "  :  " + device_address);
 								deviceNotFound = false;
 								connected_PMSensors_addresses.push(str_device);
 								connected_PMSensors_addresses.push(device_address);
@@ -2076,9 +2131,9 @@ function connect_bt_device(socket, bt_object, status_boolean, str_device){
 							
 						})
 						.catch(function(err) {
+							// The device has not been found.
 							var deviceNotFound = false;
 							connected_PMSensors_addresses.pop(device_address);
-
 							console.log('[Error] Device: ' + device_name , err);
 							
 							// message status in case GAMES interface
@@ -2126,130 +2181,13 @@ function connect_bt_device(socket, bt_object, status_boolean, str_device){
 	
 }
 
-function __connect_bt_device(socket, bt_object, bt_device_address, status_boolean){
-	
-	if (!is_imu1_connected){
-        var device = "imu1";
-    } else if  (!is_imu2_connected){
-        var device = "imu2";
-    } else if (!is_imu3_connected){
-        var device = "imu3";
-    };
-
-	if (!status_boolean){
-		status_boolean = false;
-		var deviceNotFound = true;
-		var pairedDevices = bt_object.scan()
-		.then(function(devices) {
-			console.log("[Bt] Scanning devices ...");
-			console.log(devices)
-			for (let i = 0; i < devices.length; i++) {
-				let device_name = devices[i].name
-				let device_address = devices[i].address
-				
-				if (device_name.substr(device_name.length -3) == "-PM"){
-					console.log(device_name + "  :  " + device_address);
-					console.log("[Bt] Device found. Trying connection...")
-					deviceNotFound = false;
-					bt_object.connect(device_address)
-						.then(function() {
-							var deviceNotFound = false;
-							console.log('[Bt] Bluetooth connection established with device name: ' + device_name)
-							if(mode_games){
-								socket.emit('games:connection_status', {
-								device: device,
-								// status--> 0: connect, 1: disconnect, 2: not paired
-								status: 0
-								})
-							} else{ 
-								socket.emit('monitoring:connection_status', {
-									device: device,
-									// status--> 0: connect, 1: disconnect, 2: not paired
-									status: 0
-								}) 
-							}
-							
-							if (device == "imu1"){
-								is_imu1_connected = true;
-							} else if (device == "imu2"){
-								is_imu2_connected = true
-							} else if (device == "imu3"){
-								is_imu3_connected = true
-							};
-						})
-						.catch(function(err) {
-							console.log('[Error] Device: ' + device_name , err);
-							// Status message in case GAMES platform
-							socket.emit('games:connection_status', {
-								device: device,
-								// status--> 0: connect, 1: disconnect, 2: not paired
-								status: 1
-							})
-							// Status message in case SWalkerII platform
-							socket.emit('monitoring:connection_status', {
-								device: device,
-								// status--> 0: connect, 1: disconnect, 2: not paired
-								status: 1
-							}) 
-							
-							
-						})
-					
-				}else{
-					console.log("device not found:" + bt_device_address);
-					var deviceNotFound = true
-				}
-				
-			}
-			
-			if(deviceNotFound | (devices.length == 0)){
-				if (device == "imu1"){
-					is_imu1_connected = false;
-				} else if (device == "imu2"){
-					is_imu2_connected = false
-				} else if (device == "imu3"){
-					is_imu3_connected = false
-				};
-				
-				socket.emit('games:connection_status', {
-					device: device,
-					// status--> 0: connect, 1: disconnect, 2: not paired/not found
-					status: 2
-				}) 
-				socket.emit('monitoring:connection_status', {
-					device: device,
-					// status--> 0: connect, 1: disconnect, 2: not paired/not found
-					status: 2
-				}) 
-
-			} 
-		});
-
-		
-	}else{
-		console.log('[Bt] The device is already connected!')
-		socket.emit('monitoring:connection_status', {
-			device: device,
-			// status--> 0: connect, 1: disconnect, 2: not paired
-			status: 0
-		}) 
-		
-    }
-	
-    return status_boolean
-}
-
 function disconnect_bt_device(socket, bt_object, status_boolean, str_device){
-    console.log(status_boolean);
     if (status_boolean){
-		console.log(connected_PMSensors_addresses);
 		if (connected_PMSensors_addresses.includes(str_device)){
 			let index = connected_PMSensors_addresses.indexOf(str_device);
-			console.log(index)
 			connected_PMSensors_addresses.splice(index+1, 1);
 			connected_PMSensors_addresses.pop(str_device);
 		}
-		console.log(connected_PMSensors_addresses);
 		bt_object.close()
 		.then(function() {
 			console.log('[Bt] Bluetooth connection successfully closed ');
@@ -2274,22 +2212,8 @@ function disconnect_bt_device(socket, bt_object, status_boolean, str_device){
 			is_imu3_connected = false
 		}else if(str_device == "sw"){
 			is_swalker_connected = false;
-		}
-	
-
-				
+		}			
 	}
 	
 }
 
-function predict_strideLength(leg_length, rom_right, rom_lefth){
-
-    var lengthL = Math.sin(rom_left)*leg_length;
-    var lengthR = Math.sin(rom_right)*leg_length;
-
-    var cycle_length = lengthL + lengthR
-    var totalStride_length = 2*(cycle_length);
-
-
-    return totalStride_length
-}
