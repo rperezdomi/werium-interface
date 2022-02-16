@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>Unity WebGL Player | Werium Games</title>
+    <link rel="shortcut icon" href="TemplateData/favicon.ico">
+    <link rel="stylesheet" href="../../assets/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="../../assets/css/google-fonts-nunito.css">
+    <link rel="stylesheet" href="../../assets/css/fontawesome-all.min.css">
+    <link rel="stylesheet" href="../../assets/css/google-fonts-montserrat.css">
+    <link rel="stylesheet" href="../../assets/css/cloudflareAjaxBaguetteboxbaguetteBox.min.css">
+    <link rel="stylesheet" href="../../assets/css/smoothproducts.css">
+    <link rel="stylesheet" href="../../assets/css/move_arrows.css">
+    <link rel="stylesheet" href="../../assets/css/button_styles.css">
+    <link rel="stylesheet" href="TemplateData/style.css">
+    <script src="TemplateData/UnityProgress.js"></script>
+    <script src="Build/UnityLoader.js"></script>
+    <script>
+      var unityInstance = UnityLoader.instantiate("unityContainer", "Build/Build.json", {onProgress: UnityProgress});
+    </script>
+  </head>
+  <body>
+	  <div id="content">
+		<nav class="navbar navbar-light navbar-expand shadow mb-4 topbar static-top" style="background-color: #4e73df;">
+			<button class="btn-noStyle"><a href="index_games.html"><span style="color: white"><i class="fas fa-arrow-left fa-3x"></i></span></a></button>
+			&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+			<h6>  <span style="color: white">INDICE </span></h6>
+			&nbsp;&nbsp;&nbsp;
+			<h6>  <span style="color: white">DE </span></h6>
+			&nbsp;&nbsp;&nbsp;
+			<h6>  <span style="color: white">JUEGOS </span></h6>
+			<div class="container-fluid">
+				<ul class="nav navbar-nav flex-nowrap ml-auto">
+					<div class="d-none d-sm-block topbar-divider"></div>
+					
+					<li class="nav-item dropdown no-arrow" role="presentation">
+						<div class="nav-item dropdown no-arrow"><a class="dropdown-toggle nav-link" data-toggle="dropdown" aria-expanded="false" href="#"><img class="img" src="../../assets/img/letras.png" style= "height:80%"><img class="img" src="../../assets/img/logoblanco.png" style= "height:80%"></a>
+					   
+						</div>
+					</li>
+				</ul>
+			</div>
+		</nav>
+	</div>
+    <div class="webgl-content">
+		
+      <div id="unityContainer" style="width: 960px; height: 600px"></div>
+      <div class="footer">
+        <div class="webgl-logo"></div>
+        <div class="fullscreen" onclick="unityInstance.SetFullscreen(1)"></div>
+        <div class="title">Werium Games</div>
+      </div>
+    </div>
+  </body>
+</html>

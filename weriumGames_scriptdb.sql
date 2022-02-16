@@ -86,7 +86,7 @@ COLLATE = utf8mb4_unicode_ci;
 -- Table `weriumGames`.`tabla_angulos`
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `weriumGames`.`tabla_objetivos` (
-  `id_objetivo` INT NULL DEFAULT NULL,
+  `id_objetivo` INT NOT NULL AUTO_INCREMENT,
   `id_sesion` INT NULL DEFAULT NULL,
   `n_objetivo` VARCHAR(45) NULL DEFAULT NULL,
   `angulo_x`  VARCHAR(45) NULL DEFAULT NULL,

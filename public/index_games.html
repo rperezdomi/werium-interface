@@ -40,8 +40,7 @@
 		<nav class="navbar navbar-dark align-items-start sidebar sidebar-dark accordion bg-gradient-primary p-0">
             <div class="container-fluid d-flex flex-column p-0">
                 <a class="navbar-brand d-flex justify-content-center align-items-center sidebar-brand m-0" href="#">
-                    <img class="img" style= "height:250%" src="assets/img/logoblanco.png">
-                    <div class="sidebar-brand-text mx-3"><span>Games</span></div>
+                    <div class="sidebar-brand-text mx-3"><span>JUEGOS</span></div>
                 </a>
                 <hr class="sidebar-divider my-0">
                 <ul class="nav navbar-nav text-light" id="accordionSidebar">
@@ -86,6 +85,26 @@
 							</div>
 						</div>
 					</div>
+					<!-- Modal IMU not connected -->
+					<div class="modal fade" id="modalSensorNotConnected" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+						<div class="modal-dialog" role="document">
+						<div class="modal-content">
+							<div class="modal-header">
+							<h5 class="modal-title" id="exampleModalLabel"> Error </h5>
+							<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+								<span aria-hidden="true">&times;</span>
+							</button>
+							</div>
+							<div class="modal-body">
+							<p> No se ha encontrado ninguna conexión. Por favor, antes de iniciar el juego, encienda un sensor y haga click en el botón "Conectar Sensor" </p>
+
+							</div>
+							<div class="modal-footer">
+							<button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+							</div>
+						</div>
+						</div>
+					</div>    
 					<nav class="navbar navbar-light navbar-expand shadow mb-4 topbar static-top" style="background-color: #4e73df;">
 						<div class="container-fluid">
 							<ul class="nav navbar-nav flex-nowrap ml-auto">
@@ -106,6 +125,7 @@
 						</div>
 					   
 				</div>
+				<br>
 				<div class="mb-3 d-flex centered">
 					
 					
@@ -113,25 +133,26 @@
 					<button class="btn btn-primary " value="off" id="connect_sensor" type="submit" style="margin:5px; background: #4e73df; border-color: #0968e4"> Conectar Sensor </button>
 			
 				</div>
+				<br>
 				<div align="center">
 					<div class = "flex-container" align="center">
 						 
 						<div align = "center" class= "container-fluid">
-							<p><b><span style="color: #4e73df">GAME 1</span></b></p>
-							<button class="btn-noStyle" type = "submit" name = "game1_button" value = "not_pressed"><a href="Game1/index_game1.html">
-								<img class="btn-square" src="assets/img/game1_screenshot.png" >
-							</a></button>
+							<p><b><span style="color: #4e73df">JUEGO 1</span></b></p>
+							<button id="game1" class="btn-noStyle" type = "submit" name = "game1_button" value = "not_pressed">
+								<img class="btn-circle-icon" src="assets/img/games/Juego1.png ">
+							</button>
 						</div>
 						<div align = "center" class= "container-fluid">
-							<p><b><span style="color: #4e73df">GAME 2</span></b></p>
-							<button class="btn-noStyle" type = "submit" name = "game1_button" value = "not_pressed"><a href="Build1/index.html">
-								<img class="btn-square" src="assets/img/exo_render.png" >
-							</a></button>
+							<p><b><span style="color: #4e73df">JUEGO 2</span></b></p>
+							<button id="game2" class="btn-noStyle" type = "submit" name = "game2_button" value = "not_pressed">
+								<img class="btn-circle-icon" src="assets/img/games/Juego2.png" >
+							</button>
 						</div>
 						<div align = "center" class= "container-fluid">
-							<p><b><span style="color: #4e73df">GAME 3</span></b></p>
-							<button class="btn-noStyle" type = "submit" name = "game1_button" value = "not_pressed">
-								<img class="btn-square" src="assets/img/exo_render.png" >
+							<p><b><span style="color: #4e73df">JUEGO 3</span></b></p>
+							<button id="game3" class="btn-noStyle" type = "submit" name = "game3_button" value = "not_pressed">
+								<img class="btn-circle-icon" src="assets/img/games/Juego3.png" >
 							</button>
 						</div>
 					</div>
@@ -139,21 +160,15 @@
 				<div align="center">
 					<div class = "flex-container" align="center">
 						<div align = "center" class= "container-fluid">
-								<p><b><span style="color: #4e73df">GAME 4</span></b></p>
-							<button class="btn-noStyle" type = "submit" name = "game1_button" value = "not_pressed">
-								<img class="btn-square" src="assets/img/exo_render.png" >
+								<p><b><span style="color: #4e73df">JUEGO 4</span></b></p>
+							<button id="game4" class="btn-noStyle" type = "submit" name = "game4_button" value = "not_pressed">
+								<img class="btn-circle-icon" src="assets/img/games/Juego4.png" >
 							</button>
 						</div>
 						<div align = "center" class= "container-fluid">
-								<p><b><span style="color: #4e73df">GAME 5</span></b></p>
-							<button class="btn-noStyle" type = "submit" name = "game1_button" value = "not_pressed">
-								<img class="btn-square" src="assets/img/exo_render.png" >
-							</button>
-						</div>
-						<div align = "center" class= "container-fluid">
-								<p><b><span style="color: #4e73df">GAME 6</span></b></p>
-							<button class="btn-noStyle" type = "submit" name = "game1_button" value = "not_pressed">
-								<img class="btn-square" src="assets/img/exo_render.png" >
+								<p><b><span style="color: #4e73df">JUEGO 5</span></b></p>
+							<button id="game5" class="btn-noStyle" type = "submit" name = "game1_button" value = "not_pressed">
+								<img class="btn-circle-icon" src="assets/img/games/Juego5.png" >
 							</button>
 						</div>
 					</div>
