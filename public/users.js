@@ -268,8 +268,8 @@ socket.on('datostabla', function(datas) {
             let dt = $('#sessionsList').DataTable();
 			let vars = dt.data().toArray();
 			let checkeds = dt.data().toArray().filter((data) => data.checked);
-			console.log(checkeds[0].NumberSession);
-			n_session = checkeds[0].NumberSession;
+			console.log(checkeds[0].idTable_session);
+			n_session = checkeds[0].idTable_session;
 			
             
             
