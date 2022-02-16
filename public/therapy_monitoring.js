@@ -34,6 +34,7 @@ var current_step = 0;
 var step_left = 0;
 
 // Therapy variables
+var is_dataRecorded = false;
 var therapy_started = false;
 var therapy_reestart = false;
 var numberElements_right;
@@ -51,9 +52,11 @@ var max_amplitude_value = [0,0,0,0,0,0,0,0];
 var normalized_value = 0
 var y_activation_values = [40, 20, 0, -20, 40, 20, 0, -20];
 var hidden_emg = true;
+var currentColor;
+var currentWidth;
 
 // IMUS variables
-var imus_enabled = false;
+//var imus_enabled = false;
 
 // Gait variables
 var count_traction = 0;
@@ -120,15 +123,19 @@ window.onload = function() {
 			}],
 			yAxes: [{
 				ticks: {
+                                        display: true,
 					max: 50,    // maximum will be 70, unless there is a lower value.
-					min: -30,    // minimum will be -10, unless there is a lower value.
+					min: -30    // minimum will be -10, unless there is a lower value.
+                                        
 				},
 				scaleLabel: {
+                                        
 					display: true,
 					labelString: 'Grados (º)'
 				}
 			}]
 		},
+		
 		maintainAspectRatio: false,
 		//showLines: false, // disable for a single dataset
 		animation: {
@@ -220,7 +227,8 @@ window.onload = function() {
 	var ctx_emg_real_data_objects =  [ctxrhipInstance.data.datasets[1], ctxrhipInstance.data.datasets[2], ctxlhipInstance.data.datasets[1], ctxlhipInstance.data.datasets[2]];
 	var ctx_rom_data_objects = [ctxrhipInstance.data.datasets[0],  ctxlhipInstance.data.datasets[0]]
 
-	var imu1_is_connected = imu2_is_connected = imu3_is_connected = is_swalker_connected = emg_enabled = false;
+	//var imu1_is_connected = imu2_is_connected = imu3_is_connected = 
+	is_swalker_connected = emg_enabled = false;
 	
 	//** Data incomming from the Webserver (index) **//
 	socket.on('monitoring:jointData', (data) => {
@@ -229,9 +237,6 @@ window.onload = function() {
 		rom_right = data.rom_right;
 		rom_left = data.rom_left;
 		emg_enabled = data.emg_connection_status;
-		imu1_is_connected = data.imu1_connection_status;
-		imu2_is_connected = data.imu2_connection_status;
-		imu3_is_connected = data.imu3_connection_status;
 		emg_data = data.emg;     // json
 
    
@@ -253,7 +258,8 @@ window.onload = function() {
 			emg = JSON.parse(emg_data).emg;
 			threshold_errors = JSON.parse(emg_data).threshold_errors;
 			threshold_values = JSON.parse(emg_data).threshold_values;
-			binary_activation_values = JSON.parse(emg_data).binary_activation_values;			
+			binary_activation_values = JSON.parse(emg_data).binary_activation_values;
+
 			max_amplitude_value = JSON.parse(emg_data).max_emg_values;
 		}
 
@@ -277,6 +283,7 @@ window.onload = function() {
 			document.getElementById("connect_swalker").style.background = "#4eb14e";
 		}
 		
+		/*
 		// Change IMUs buttons to red if their connection has been closed
 		if (document.getElementById("connect_imu1").style.background == "#4eb14e" & !imu1_is_connected) {
 			document.getElementById("connect_imu1").value = "on";
@@ -293,12 +300,16 @@ window.onload = function() {
 			document.getElementById("connect_imu3").innerHTML = "Re-Conectar IMU3";
 			document.getElementById("connect_imu3").style.background = "#eb0a0a";
 		}
+		*/
 		
 		if (therapy_started){
 			
 			// update data values
 			// swalker
 			if (is_swalker_connected){
+				// show y axis label and ticks
+				//commonJointsOptions.scales.yAxes[0].ticks.display = true;
+                               // commonJointsOptions.scales.yAxes[0].scaleLabel.display = true;
 				// update supported weight
 				document.getElementById("supported_weight").innerHTML =  (100*load/patient_weight); 
 
@@ -317,7 +328,11 @@ window.onload = function() {
 			var upperLeg_emg = [emg[0], emg[1], emg[4], emg[5]]
 
 			if (emg_enabled){
-				
+				//ctxlhipInstance.options.scales.yAxes[0].ticks.display = true;
+   				//ctxlhipInstance.options.scales.yAxes[0].scaleLabel.display = true;
+                                //ctxrhipInstance.options.scales.yAxes[0].ticks.dislpay = true;
+				//ctxrhipInstance.options.scales.yAxes[0].scaleLabel.display =  true;
+
 				for (var i = 0; i < ctx_emg_real_data_objects.length ; i++) {
 					// define current dataset
 					real = ctx_emg_real_data_objects[i];
@@ -333,11 +348,8 @@ window.onload = function() {
 
 					// define colors
 					currentColorList = define_valueColor(i);
-					
-					var currentColor;
-					var currentWidth;
-					currentColor, currentWidth = getSampleColorWidth(upperLeg_emg[i], upperLeg_max_amplitude_values[i]);
-					
+					currentColor, currentWidth = getSampleColorWidth(upperLeg_emg[i], upperLeg_max_amplitude_values[i], currentColorList);
+					console.log(currentColor);
 					// Check muscle activation. If muscle activated, normalize the value up to the maximum one, then update point color. If not, make it transparent.
 					if((upperLeg_binary_activation_values[i] == 1) && (upperLeg_threshold_errors[i] == 0)){
 						
@@ -347,7 +359,7 @@ window.onload = function() {
 						pushDataValue(upperLeg_y_activation_values[i], real, 0, "#ff000000");
 					}			
 				}
-			}	
+			}
 			
 			if (is_swalker_connected | emg_enabled){
 							
@@ -362,7 +374,7 @@ window.onload = function() {
 					ctxrhipInstance.data.labels.push(label);
 						
 				// delete first element to keep the graph in movement. PlotSampling data reception: 20Hz --> 2 segundos: 40muestras
-				if((updateCounter_right > 40)){
+				if((updateCounter_right > 60)){
 					
 					ctxrhipInstance.data.labels.shift();
 					ctxlhipInstance.data.labels.shift();
@@ -420,6 +432,12 @@ window.onload = function() {
 
 		ctxrhipInstance.update();
 		ctxlhipInstance.update();
+	})
+	
+
+	socket.on("monitoring:recorded_sessionData", (data) => {
+		console.log("recorded!");
+		is_data_recorded = true;
 	})
 
 	document.getElementById("connect_swalker").onclick = function() {
@@ -535,29 +553,34 @@ window.onload = function() {
 	document.getElementById("start_stop").onclick = function() {
 		// Move to the start position and configure the robot with the therapy settings
 	//	is_swalker_connected = true
-		if (is_swalker_connected || emg_enabled || imus_enabled){
+		if (is_swalker_connected || emg_enabled){
 			if (document.getElementById("start_stop").value == "start_calibration") {
-				document.getElementById("start_stop").value = "countdown";
-				console.log("start_stop");
-                if (is_swalker_connected){
-					// show initial position modal (start swalker rom calibrations), then change button content
-					$("#modaltherapyadviceinitialposition").modal('show');
+				if (!is_dataRecorded){
+					document.getElementById("start_stop").value = "countdown";
+					console.log("start_stop");
+					if (is_swalker_connected){
+						// show initial position modal (start swalker rom calibrations), then change button content
+						$("#modaltherapyadviceinitialposition").modal('show');
+					} else {
+						// change button content
+						var myTimer;
+						myTimer = setInterval(myClock, 1000);
+						var c = 4;
+						function myClock() {
+							document.getElementById("start_stop").innerHTML = --c;
+								if (c == 0) {
+									clearInterval(myTimer);
+									document.getElementById("save_data").style.display = 'none';
+									document.getElementById("start_stop").value = "start";
+									document.getElementById("start_stop").innerHTML = "START";
+									document.getElementById("start_stop").style.background = "#09c768";
+									document.getElementById("start_stop").style.borderColor = "#09c768";
+								}
+						}	
+					}
 				} else {
-					// change button content
-					var myTimer;
-					myTimer = setInterval(myClock, 1000);
-					var c = 4;
-					function myClock() {
-						document.getElementById("start_stop").innerHTML = --c;
-							if (c == 0) {
-								clearInterval(myTimer);
-								document.getElementById("save_data").style.display = 'none';
-								document.getElementById("start_stop").value = "start";
-								document.getElementById("start_stop").innerHTML = "START";
-								document.getElementById("start_stop").style.background = "#09c768";
-								document.getElementById("start_stop").style.borderColor = "#09c768";
-							}
-					}	
+					$("#modalDataNotSaved").modal('show');
+
 				}
 			// Start the therapy
 			} else if (document.getElementById("start_stop").value == "start") {
@@ -600,7 +623,7 @@ window.onload = function() {
 			document.getElementById("save_data").style.background = "#0968e4";
 			document.getElementById("save_data").style.display = 'none';
 			
-			
+			is_dataRecorded = false;
 			// Save configurtion 
 			socket.emit('addsesiondata')
 			socket.emit('monitoring:save_emg')
@@ -608,6 +631,8 @@ window.onload = function() {
 			
 		}
 	};
+	
+	
 
 
 	// Advise: changing window and will stop therapy
@@ -631,9 +656,7 @@ window.onload = function() {
 	
 	document.getElementById("stop-exit-therapy").onclick = function() {
 		// Ensure to end any connection
-		if(imu1_is_connected | imu2_is_connected | imu3_is_connected){
-			socket.emit('monitoring:disconnect_imus');
-		}
+		
 		if(is_swalker_connected){
 			socket.emit('monitoring:disconnect_swalker');
 			is_swalker_connected = false;
@@ -655,6 +678,7 @@ window.onload = function() {
 		console.log(enable_music);
 	}, false);
 
+	/*
 	document.getElementById("enable_imus").onclick = function() {
 		if (document.getElementById("enable_imus").value == "off"){
 			imus_enabled = true;
@@ -683,7 +707,8 @@ window.onload = function() {
 			socket.emit('monitoring: disconnect_imus');
 		}
 	};
-
+	
+	
 	document.getElementById("connect_imu1").onclick = function() {
 		// Start emg connection
 		if (document.getElementById("connect_imu1").value == "off") {
@@ -748,7 +773,8 @@ window.onload = function() {
 			socket.emit('monitoring:disconnect_imu3');
 		}
 	}	
-
+	*/
+	
 	// Move the platform functions
 	const $arrow_right = document.querySelector('.arrow_right');
 	const $arrow_left = document.querySelector('.arrow_left');
@@ -901,20 +927,13 @@ window.onbeforeunload = function() {
 socket.emit('monitoring:ask_therapy_settings');
 socket.on('monitoring:show_therapy_settings', (data) => {
 	console.log(data)
-	// Get therapy configuration values 
-	steps = data.step;
-	pwbs = data.pbws;
-	rom = data.rom;
-	vel = data.gait_velocity;
-	patient_weight = data.weight;
-	age = data.patient_age;
 
 
 	// Display in HTML the therapy configuration
 	document.getElementById("patient").innerHTML =  data.patient_name;
-	document.getElementById("age").innerHTML =  age;
+	document.getElementById("age").innerHTML =  data.patient_age;
 	document.getElementById("gait_velocity").innerHTML = data.gait_velocity;
-	document.getElementById("Weight").innerHTML =  data.weight; 
+	document.getElementById("Weight").innerHTML =  data.patient_weight; 
 	document.getElementById("LegLength").innerHTML =  data.leg_length;
 });
 
@@ -962,74 +981,7 @@ socket.on('monitoring:connection_status', (data) => {
 			document.getElementById("enable_emg").style.background = "#808080";
 			emg_enabled = false
 		}
-	} else if ( device == 'imu1'){
-		if (status == 0){
-			console.log("is con")
-			//change button color and text;
-			document.getElementById("connect_imu1").value = "on";
-			document.getElementById("connect_imu1").innerHTML = "IMU1 Conectado";
-			document.getElementById("connect_imu1").style.background = "#4eb14e";
-			imu1_is_connected = true
-		} else{
-			if (status == 1){
-				console.log("error connection")
-			} else if (status == 2){
-				console.log("device not found")
-			} else if(status == 3){
-				console.log("device disconnected")
-			}
-			//change button color and text;
-			document.getElementById("connect_imu1").value = "off";
-			document.getElementById("connect_imu1").innerHTML = "Re-Conectar IMU1";
-			document.getElementById("connect_imu1").style.background = "#eb0a0a";
-			imu1_is_connected = false
-		} 
-	} else if ( device == 'imu2'){
-		if (status == 0){
-			console.log("is con")
-			//change button color and text;
-			document.getElementById("connect_imu2").value = "on";
-			document.getElementById("connect_imu2").innerHTML = "IMU2 Conectado";
-			document.getElementById("connect_imu2").style.background = "#4eb14e";
-			imu2_is_connected = true
-		} else {
-			if (status == 1){
-				console.log("error connection")
-			} else if (status == 2){
-				console.log("device not found")
-			} else if(status == 3){
-				console.log("device disconnected")
-			}
-			console.log("error connection")
-			//change button color and text;
-			document.getElementById("connect_imu2").value = "off";
-			document.getElementById("connect_imu2").innerHTML = "Re-Conectar IMU2";
-			document.getElementById("connect_imu2").style.background = "#eb0a0a";
-			imu2_is_connected = false;
-		}
-	} else if ( device == 'imu3'){
-		if (status == 0){
-			console.log("is con")
-			//change button color and text;
-			document.getElementById("connect_imu3").value = "on";
-			document.getElementById("connect_imu3").innerHTML = "IMU3 Conectado";
-			document.getElementById("connect_imu3").style.background = "#4eb14e";
-			imu2_is_connected = true
-		} else{
-			if (status == 1){
-				console.log("error connection")
-			} else if (status == 2){
-				console.log("device not found")
-			} else if(status == 3){
-				console.log("device disconnected")
-			}
-			console.log("error connection")
-			//change button color and text;
-			document.getElementById("connect_imu3").value = "off";
-			document.getElementById("connect_imu3").innerHTML = "Re-Conectar IMU3";
-			document.getElementById("connect_imu3").style.background = "#eb0a0a";
-			imu3_is_connected = false;
-		}
+
 	} else if ( device == 'vr'){
 		if (status == 0){
 			console.log("is con")
@@ -1090,33 +1042,35 @@ function define_valueColor(i){
 	}
 
 	currentColorList = [currentColor1, currentColor2, currentColor3, currentColor4, currentColor5]
+	console.log(currentColorList);
 	return currentColorList
 
 }
 
-function getSampleColorWidth(current_emg_value, max_value){
+function getSampleColorWidth(current_emg_value, max_value, currentColorList){
 	normalized_value = current_emg_value/max_value;
 	// Activated: Green / purple scales.
 	if (normalized_value < 0.2) {
 		currentColor = currentColorList[0];
-		currentWidth = 1.5;
+		currentWidth = 3.5;
 
 	} else if (0.2< normalized_value < 0.4) {
 		currentColor = currentColorList[1];
-		currentWidth = 3.5;
+		currentWidth = 5.5;
 
 	} else if (0.4 < normalized_value < 0.6) {
 		currentColor = currentColorList[2];
-		currentWidth = 5.5;
+		currentWidth = 7.5;
 
 	} else if (0.6 < normalized_value < 0.8) {
 		currentColor = currentColorList[3];
-		currentWidth = 7.5;
+		currentWidth = 9.5;
 
 	} else if (normalized_value > 0.8) {
 		currentColor = currentColorList[4];
-		currentWidth = 9;
+		currentWidth = 11;
 	}
+	console.log(currentColor, currentWidth);
 	return currentColor, currentWidth;
 }
 

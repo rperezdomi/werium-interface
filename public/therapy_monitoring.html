@@ -186,6 +186,26 @@
                     </div>
                     </div>
                 </div>    
+                <!-- Modal pewvious therapy is still being stored -->
+                <div class="modal fade" id="modalDataNotSaved" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                    <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                        <h5 class="modal-title" id="exampleModalLabel"> Error </h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                        </div>
+                        <div class="modal-body">
+                        <p> La terapia anterior está siendo almacenada. Por favor, espere unos instantes para comenzar una nueva terapia. </p>
+
+                        </div>
+                        <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+                        </div>
+                    </div>
+                    </div>
+                </div>    
                 <!-- Modal Initial Position -->
                 <div class="modal fade" id="modaltherapyadviceinitialposition" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
                     <div class="modal-dialog" role="document">
@@ -215,19 +235,21 @@
   
                     <div class="mb-3 d-flex centered">
                         <button style="margin:5px; background: #808080; border-color: #0968e4" class="btn btn-primary " value="off" id="connect_swalker" type="submit"> Conectar SWalker </button>
-                        <button class="btn btn-primary " value="off" id="enable_emg" type="submit" style="margin:5px; background: #808080; border-color: #0968e4"> Conectar EMG </button>
-                        <button class="btn btn-primary " value="off" id="enable_imus" type="submit" style="margin:5px; background: #808080; border-color: #0968e4"> Conectar IMU(s) </button>
+                        <button class="btn btn-primary " value="off" id="enable_emg" type="submit" style="margin:5px; background: #808080; border-color: #0968e4"> Conectar Delsys </button>
+                        <!--<button class="btn btn-primary " value="off" id="enable_imus" type="submit" style="margin:5px; background: #808080; border-color: #0968e4"> Conectar IMU(s) </button>-->
                         <button class="btn btn-primary " value="off" id="enable_vr" type="submit" style = "margin:5px; background: #808080; border-color: #0968e4"> Conectar VR </button>
                         <button class="btn btn-primary " value="off" id="test BLE" type="submit" style = "margin:5px; background: #808080; border-color: #0968e4; display:none" > Test BLE </button>
                    
 
                     </div>
+                    <!--
                     <div class="mb-3 d-flex centered">
                         <button class="btn btn-primary " value="off" id="connect_imu1" type="submit" style="margin:5px; background: #808080; border-color: #0968e4; display: none"> Conectar IMU 1 </button>
                         <button class="btn btn-primary " value="off" id="connect_imu2" type="submit" style="margin:5px; background: #808080; border-color: #0968e4; display: none"> Conectar IMU 2 </button>
                         <button class="btn btn-primary " value="off" id="connect_imu3" type="submit" style="margin:5px; background: #808080; border-color: #0968e4; display: none"> Conectar IMU 3 </button>
 
                     </div>
+                    -->
                     <div class="mb-3 d-flex centered">
 						<button class="btn btn-primary " value="start_position" id="save_data" type="submit" style="background: #fd4e4e; border-color: #fd4e4e; display:none">Guardar datos</button>
                         <button class="btn btn-primary btn-xl" value="start_calibration" id="start_stop" type="submit" style="background: #0968e4">Nueva Terapia</button>

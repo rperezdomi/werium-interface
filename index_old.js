@@ -1,5 +1,4 @@
-
-
+dd
 const dgram = require('dgram');
 const path = require('path'); // Modulo de nodejs para trabajar con rutas
 const express = require('express'); // Configurar express
@@ -19,8 +18,8 @@ var mode_games = false;
 
 const serial_swalker = new BluetoothClassicSerialportClient();
 const serial_imu1 = new BluetoothClassicSerialportClient();
-//const serial_imu2 = new BluetoothClassicSerialportClient();
-//const serial_imu3 = new BluetoothClassicSerialportClient();
+const serial_imu2 = new BluetoothClassicSerialportClient();
+const serial_imu3 = new BluetoothClassicSerialportClient();
 
 // Relative configuration file path:
 var therapyConfigPath = path.join(__dirname, 'config','therapySettings.json');
@@ -47,9 +46,6 @@ var test_rom_left_vector = [36.5585, 36.5259, 36.4962, 36.4689, 36.4408, 36.3909
 ////////** SWalker**//////////
 //////////////////////////////
 
-////// ACCelerometer data dELSYS ////
-const client_delsys_acc = new net.Socket();
-const delsys_acc_port = 50042;
 /////////////////////
 //** EMG Conection **//
 /////////////////////
@@ -58,6 +54,7 @@ const delsys_acc_port = 50042;
 
 const client_delsys_start = new net.Socket();
 const client_delsys_data = new net.Socket();
+
 const DELSYS_PC_IP = '192.168.43.10';
 const DELSYS_START_PORT = 30000;
 const DELSYS_DATA_PORT = 30002;
@@ -65,22 +62,6 @@ var is_delsys_connected = false;
 var emg_msg = "";    // var sent to therapy_monitoring.js
 var emg_binary_activation_vector = [];
 var emg_activity_vector = [];
-
-var tibiaR_accX_vector = [];
-var tibiaR_accY_vector = [];
-var tibiaR_accZ_vector = [];
-var tibiaL_accX_vector = [];
-var tibiaL_accY_vector = [];
-var tibiaL_accZ_vector = [];
-var tibiaR_accX = 0;
-var tibiaR_accY = 0;
-var tibiaR_accZ = 0;
-var tibiaL_accX = 0;
-var tibiaL_accY = 0;
-var tibiaL_accZ = 0;
-
-
-
 
 client_delsys_data.on('data', function(data) {
     var datos = data.toString();
@@ -96,44 +77,38 @@ client_delsys_data.on('data', function(data) {
                 // End of the message
                 msg_data = false;
                 emg_msg = received_data;
+                console.log(JSON.parse(emg_msg).binary_activation_values)
                 //console.log(JSON.parse(emg_msg).binary_activation_values)
                 received_data = "";
                 //found = true;
                 
                 if (record_therapy){
-					
 					// if swalker is not connected -> store data
-					time_stamp_vector.push(Date.now());
-					emg_activity_vector.push(JSON.parse(emg_msg).emg);
-					emg_binary_activation_vector.push(JSON.parse(emg_msg).binary_activation_values);
-				
-					// acc
-					tibiaR_accX_vector.push(tibiaR_accX)
-					tibiaR_accY_vector.push(tibiaR_accY)
-					tibiaR_accZ_vector.push(tibiaR_accZ)
-					tibiaL_accX_vector.push(tibiaL_accX)
-					tibiaL_accY_vector.push(tibiaL_accY)
-					tibiaL_accZ_vector.push(tibiaL_accZ)
-					
-					if(is_swalker_connected){
-						// swalker data
-						rom_left_vector.push(parseFloat(rom_left-rom_left_calibration));
-						rom_right_vector.push(parseFloat(rom_right-rom_right_calibration));
-						load_vector.push((parseFloat(load)/global_patiente_weight)*100);
-						direction_vector.push(direction_char);
-					}
+					if (!is_swalker_connected){
+						time_stamp_vector.push(Date.now());
+						emg_activity_vector.push(JSON.parse(emg_msg).emg);
+						emg_binary_activation_vector.push(JSON.parse(emg_msg).binary_activation_values);
+						
+						if(is_imu1_connected && (imu1_yaw.length != 0)){
+							imu1_yaw_vector.push(parseFloat(imu1_yaw));
+							imu1_pitch_vector.push(parseFloat(imu1_pitch));
+							imu1_roll_vector.push(parseFloat(imu1_roll));
+						}
+						if(is_imu2_connected && (imu2_yaw.length != 0)){
+							imu2_pitch_vector.push(parseFloat(imu2_pitch));
+							imu2_roll_vector.push(parseFloat(imu2_roll));
+							imu2_yaw_vector.push(parseFloat(imu2_yaw));
+						}
+						if(is_imu3_connected && (imu3_yaw.length != 0)){
+							imu3_pitch_vector.push(parseFloat(imu3_pitch));
+							imu3_roll_vector.push(parseFloat(imu3_roll));
+							imu3_yaw_vector.push(parseFloat(imu3_yaw));
+						}
+					} 
                 }
             }
         }
     }
-});
-
-var index_channel = 1;
-client_delsys_acc.on('data', function(data) {
-    
-    index_channel = decodeFloat(buf, index_channel);
-    
-    
 });
 
 /////////////////////////////////
@@ -195,9 +170,11 @@ var record_therapy = false;
 var time_stamp_vector = [];
 var therapy_speed = 's';
 // vars used to imus storage
-var is_first_datais_first_data = [true, true, true, true];   //sw, imu1, imu2, imu3
-var is_imu1_connected = false;
-
+var is_first_data = [true, true, true, true];   //sw, imu1, imu2, imu3
+var is_imu1_connected = is_imu2_connected = is_imu3_connected = false;
+var imu1_yaw_vector = imu1_pitch_vector = imu1_roll_vector = [];
+var imu2_yaw_vector = imu2_pitch_vector = imu2_roll_vector = [];
+var imu3_roll_vector = imu3_yaw_vector = imu3_pitch_vector = [];
 // vars used for the imus data reception
 var ascii_msg_imu1;
 var imu1_yaw; 
@@ -266,16 +243,34 @@ serial_swalker.on('data', function(data){
             load = parseFloat(data_vector[0]);
             
             if (record_therapy){
-				
-				if(! is_delsys_connected){
-					// swalker data
-					rom_left_vector.push(parseFloat(rom_left-rom_left_calibration));
-					rom_right_vector.push(parseFloat(rom_right-rom_right_calibration));
-					load_vector.push((parseFloat(load)/global_patiente_weight)*100);
-					time_stamp_vector.push(Date.now());
-					direction_vector.push(direction_char);
-                
+                // swalker data
+                rom_left_vector.push(parseFloat(rom_left-rom_left_calibration));
+                rom_right_vector.push(parseFloat(rom_right-rom_right_calibration));
+                load_vector.push((parseFloat(load)/global_patiente_weight)*100);
+                time_stamp_vector.push(Date.now());
+                direction_vector.push(direction_char);
+                // IMUs data
+                if((is_imu1_connected) && (imu1_yaw.length!=0)){
+					imu1_yaw_vector.push(parseFloat(imu1_yaw));
+					imu1_pitch_vector.push(parseFloat(imu1_pitch));
+					imu1_roll_vector.push(parseFloat(imu1_roll));
 				}
+                if((is_imu2_connected) && (imu2_yaw.length != 0)){
+					imu2_yaw_vector.push(parseFloat(imu2_yaw));
+					imu2_pitch_vector.push(parseFloat(imu2_pitch));
+					imu2_roll_vector.push(parseFloat(imu2_roll));
+				}
+				if((is_imu3_connected) && (imu3_yaw.length != 0)){
+					imu3_yaw_vector.push(parseFloat(imu3_yaw));
+					imu3_pitch_vector.push(parseFloat(imu3_pitch));
+					imu3_roll_vector.push(parseFloat(imu3_roll));
+				}
+                // emg data
+                if (is_delsys_connected && (emg_msg.length != 0)){
+                    // add emg vector (s1 - s8) to array for its storage in sql
+                    emg_activity_vector.push(JSON.parse(emg_msg).emg);
+                    emg_binary_activation_vector.push(JSON.parse(emg_msg).binary_activation_values);
+                } 
             }
 
             if(vr_ready){
@@ -339,7 +334,6 @@ serial_imu1.on('data', function(data){
 		}	
     } 
     
-    /*
 	// SWalker interface mode	
     if (mode_sw) {
 		
@@ -387,6 +381,7 @@ serial_imu1.on('data', function(data){
 		
 		// The imu is streaming into #DCM mode
 		} else {
+			
 			// To change the imu streaming mode to YPR, the command "#ot" must be sent
 			var buf = Buffer.from('#ot', 'utf8');
 			serial_imu1.write(buf)
@@ -396,7 +391,6 @@ serial_imu1.on('data', function(data){
 			dcm_mode = false;
 		}  
 	}
-	*/
 }); 
 
 serial_imu1.on('closed', function(){
@@ -415,7 +409,6 @@ serial_imu1.on('closed', function(){
 
 })
 
-/*
 var data_imu2;
 var lasthex_imu2 = "";
 serial_imu2.on('data', function(data){ 
@@ -570,7 +563,7 @@ serial_imu3.on('closed', function(){
 	disconnect_bt_device(sockets['websocket'], serial_imu3, is_imu3_connected, "imu3")
 		
 })
-*/
+
 
 ///////////////////////////////////////
 //*** Server-Client communication ***//
@@ -773,18 +766,21 @@ io.on('connection', (socket) => {
 						con.query(sessionID , function (err, sessionID) {
 							if (err) throw err;
 							// Get last session ID
+							sessionID = n_session;
 							console.log(sessionID)
-							console.log(sessionID[0].idtable_session)
-							sessionID = sessionID[0].idtable_session;
-							console.log("------");
-							//console.log(sessionID[0].idTable_session)
 							// Prepare joints angles data of the last session
 							var insertDataRows = ""
 							if (is_swalker_connected){
 								var total_length = rom_right_vector.length;
 							} else if (is_delsys_connected){
 								var total_length = emg_activity_vector.length;
-							} 
+							} else if (is_imu1_connected){
+								var total_length = imu1_yaw_vector.length;
+							} else if (is_imu2_connected){
+								var total_length = imu2_yaw_vector.length;
+							} else if (is_imu3_connected){
+								var total_length = imu3_yaw_vector.length;
+							}
 							
 							console.log(total_length)
 							
@@ -806,38 +802,231 @@ io.on('connection', (socket) => {
 									}
 								}    
 								
-								if ((is_swalker_connected & is_delsys_connected)) {
-									
-									insertDataRows = "(" + (sessionID).toString() + "," + (time_stamp_vector[index]).toString() +","+ 
+								if (((is_swalker_connected & is_delsys_connected) & (is_imu1_connected & is_imu2_connected)) & is_imu3_connected){
+									insertDataRows = "(" + (sessionID).toString() + "," + (time_stamp_vector[index]).toString() +","+
 													(rom_left_vector[index]).toString() + "," + (rom_right_vector[index]).toString()  + "," + (load_vector[index]).toString() + "," + (dir_vector).toString() +  "," + 
-													(emg_activity_vector[index][0]).toString() + "," + (emg_binary_activation_vector[index][0]).toString() + "," + (emg_activity_vector[index][1]).toString() + "," + (emg_binary_activation_vector[index][1]).toString() +  "," + (emg_activity_vector[index][2]).toString()  + "," + (emg_binary_activation_vector[index][2]).toString()+  "," + (emg_activity_vector[index][3]).toString()  + "," + (emg_binary_activation_vector[index][3]).toString() +  "," + (emg_activity_vector[index][4]).toString()  + "," + (emg_binary_activation_vector[index][4]).toString() +  "," + (emg_activity_vector[index][5]).toString()  + "," + (emg_binary_activation_vector[index][5]).toString() +  "," + (emg_activity_vector[index][6]).toString()  + "," + (emg_binary_activation_vector[index][6]).toString()+  "," + (emg_activity_vector[index][7]).toString()  + "," + (emg_binary_activation_vector[index][7]).toString() + 
-													"," + tibiaL_accx[index].toString() + "," + tibiaL_accy[index].toString() + "," + tibiaL_accz[index].toString() + "," + tibiaR_accx[index].toString() + "," + tibiaR_accy[index].toString() + "," + tibiaR_accz[index].toString() + ");"
-									var sql = "INSERT INTO data_sessions (idSesion, Date, left_hip, right_hip, weight_gauge, direction, emg_muscle_activity_s1,  muscle_binary_activation_s1, emg_muscle_activity_s2,  muscle_binary_activation_s2, emg_muscle_activity_s3,  muscle_binary_activation_s3,  emg_muscle_activity_s4,  muscle_binary_activation_s4,  emg_muscle_activity_s5,  muscle_binary_activation_s5, emg_muscle_activity_s6,  muscle_binary_activation_s6, emg_muscle_activity_s7,  muscle_binary_activation_s7, emg_muscle_activity_s8, muscle_binary_activation_s8, accX_s7, accY_s7, accZ_s7, accX_s3, accY_s3, accZ_s3) VALUES " + insertDataRows;
-									
+													(emg_activity_vector[index][0]).toString() + "," + (emg_binary_activation_vector[index][0]).toString() + "," + (emg_activity_vector[index][1]).toString() + "," + (emg_binary_activation_vector[index][1]).toString() +  "," + (emg_activity_vector[index][2]).toString()  + "," + (emg_binary_activation_vector[index][2]).toString()+  "," + (emg_activity_vector[index][3]).toString()  + "," + (emg_binary_activation_vector[index][3]).toString() +  "," + (emg_activity_vector[index][4]).toString()  + "," + (emg_binary_activation_vector[index][4]).toString() +  "," + (emg_activity_vector[index][5]).toString()  + "," + (emg_binary_activation_vector[index][5]).toString() +  "," + (emg_activity_vector[index][6]).toString()  + "," + (emg_binary_activation_vector[index][6]).toString()+  "," + (emg_activity_vector[index][7]).toString()  + "," + (emg_binary_activation_vector[index][7]).toString() + "," +
+													(imu1_yaw_vector[index]).toString() + "," + (imu1_pitch_vector[index]).toString() + "," + (imu1_roll_vector[index]).toString() + "," +
+													(imu2_yaw_vector[index]).toString() + "," + (imu2_pitch_vector[index]).toString() + "," + (imu2_roll_vector[index]).toString() + ","+
+													(imu3_yaw_vector[index]).toString() + "," + (imu3_pitch_vector[index]).toString() + "," + (imu3_roll_vector[index]).toString() + ");"
+									var sql = "INSERT INTO data_sessions (idSesion, Date, left_hip, right_hip, weight_gauge, direction, emg_muscle_activity_s1,  muscle_binary_activation_s1, emg_muscle_activity_s2,  muscle_binary_activation_s2, emg_muscle_activity_s3,  muscle_binary_activation_s3,  emg_muscle_activity_s4,  muscle_binary_activation_s4,  emg_muscle_activity_s5,  muscle_binary_activation_s5, emg_muscle_activity_s6,  muscle_binary_activation_s6, emg_muscle_activity_s7,  muscle_binary_activation_s7, emg_muscle_activity_s8, muscle_binary_activation_s8, imu1_Y, imu1_P, imu1_R, imu2_Y, imu2_P, imu2_R, imu3_Y, imu3_P, imu3_R) VALUES " + insertDataRows;
+								
+								
+								
+								} else if ((is_swalker_connected & is_delsys_connected)) {
+									if(is_imu1_connected & is_imu2_connected){
+										insertDataRows = "(" + (sessionID).toString() + "," + (time_stamp_vector[index]).toString() +","+
+														(rom_left_vector[index]).toString() + "," + (rom_right_vector[index]).toString()  + "," + (load_vector[index]).toString() + "," + (dir_vector).toString() +  "," + 
+														(emg_activity_vector[index][0]).toString() + "," + (emg_binary_activation_vector[index][0]).toString() + "," + (emg_activity_vector[index][1]).toString() + "," + (emg_binary_activation_vector[index][1]).toString() +  "," + (emg_activity_vector[index][2]).toString()  + "," + (emg_binary_activation_vector[index][2]).toString()+  "," + (emg_activity_vector[index][3]).toString()  + "," + (emg_binary_activation_vector[index][3]).toString() +  "," + (emg_activity_vector[index][4]).toString()  + "," + (emg_binary_activation_vector[index][4]).toString() +  "," + (emg_activity_vector[index][5]).toString()  + "," + (emg_binary_activation_vector[index][5]).toString() +  "," + (emg_activity_vector[index][6]).toString()  + "," + (emg_binary_activation_vector[index][6]).toString()+  "," + (emg_activity_vector[index][7]).toString()  + "," + (emg_binary_activation_vector[index][7]).toString() + "," +
+														(imu1_yaw_vector[index]).toString() + "," + (imu1_pitch_vector[index]).toString() + "," + (imu1_roll_vector[index]).toString() + "," +
+														(imu2_yaw_vector[index]).toString() + "," + (imu2_pitch_vector[index]).toString() + "," + (imu2_roll_vector[index]).toString() + ");"
+										var sql = "INSERT INTO data_sessions (idSesion, Date, left_hip, right_hip, weight_gauge, direction, emg_muscle_activity_s1,  muscle_binary_activation_s1, emg_muscle_activity_s2,  muscle_binary_activation_s2, emg_muscle_activity_s3,  muscle_binary_activation_s3,  emg_muscle_activity_s4,  muscle_binary_activation_s4,  emg_muscle_activity_s5,  muscle_binary_activation_s5, emg_muscle_activity_s6,  muscle_binary_activation_s6, emg_muscle_activity_s7,  muscle_binary_activation_s7, emg_muscle_activity_s8, muscle_binary_activation_s8, imu1_Y, imu1_P, imu1_R, imu2_Y, imu2_P, imu2_R) VALUES " + insertDataRows;
+									}
+									else if(is_imu1_connected & is_imu3_connected){
+										insertDataRows = "(" + (sessionID).toString() + "," + (time_stamp_vector[index]).toString() +","+
+														(rom_left_vector[index]).toString() + "," + (rom_right_vector[index]).toString()  + "," + (load_vector[index]).toString() + "," + (dir_vector).toString() +  "," + 
+														(emg_activity_vector[index][0]).toString() + "," + (emg_binary_activation_vector[index][0]).toString() + "," + (emg_activity_vector[index][1]).toString() + "," + (emg_binary_activation_vector[index][1]).toString() +  "," + (emg_activity_vector[index][2]).toString()  + "," + (emg_binary_activation_vector[index][2]).toString()+  "," + (emg_activity_vector[index][3]).toString()  + "," + (emg_binary_activation_vector[index][3]).toString() +  "," + (emg_activity_vector[index][4]).toString()  + "," + (emg_binary_activation_vector[index][4]).toString() +  "," + (emg_activity_vector[index][5]).toString()  + "," + (emg_binary_activation_vector[index][5]).toString() +  "," + (emg_activity_vector[index][6]).toString()  + "," + (emg_binary_activation_vector[index][6]).toString()+  "," + (emg_activity_vector[index][7]).toString()  + "," + (emg_binary_activation_vector[index][7]).toString() + "," +
+														(imu1_yaw_vector[index]).toString() + "," + (imu1_pitch_vector[index]).toString() + "," + (imu1_roll_vector[index]).toString() + "," +
+														(imu3_yaw_vector[index]).toString() + "," + (imu3_pitch_vector[index]).toString() + "," + (imu3_roll_vector[index]).toString() + ");"
+										var sql = "INSERT INTO data_sessions (idSesion, Date, left_hip, right_hip, weight_gauge, direction, emg_muscle_activity_s1,  muscle_binary_activation_s1, emg_muscle_activity_s2,  muscle_binary_activation_s2, emg_muscle_activity_s3,  muscle_binary_activation_s3,  emg_muscle_activity_s4,  muscle_binary_activation_s4,  emg_muscle_activity_s5,  muscle_binary_activation_s5, emg_muscle_activity_s6,  muscle_binary_activation_s6, emg_muscle_activity_s7,  muscle_binary_activation_s7, emg_muscle_activity_s8, muscle_binary_activation_s8, imu1_Y, imu1_P, imu1_R, imu3_Y, imu3_P, imu3_R) VALUES " + insertDataRows;
+									}
+									else if(is_imu2_connected & is_imu3_connected){
+										insertDataRows = "(" + (sessionID).toString() + "," + (time_stamp_vector[index]).toString() +","+
+														(rom_left_vector[index]).toString() + "," + (rom_right_vector[index]).toString()  + "," + (load_vector[index]).toString() + "," + (dir_vector).toString() +  "," + 
+														(emg_activity_vector[index][0]).toString() + "," + (emg_binary_activation_vector[index][0]).toString() + "," + (emg_activity_vector[index][1]).toString() + "," + (emg_binary_activation_vector[index][1]).toString() +  "," + (emg_activity_vector[index][2]).toString()  + "," + (emg_binary_activation_vector[index][2]).toString()+  "," + (emg_activity_vector[index][3]).toString()  + "," + (emg_binary_activation_vector[index][3]).toString() +  "," + (emg_activity_vector[index][4]).toString()  + "," + (emg_binary_activation_vector[index][4]).toString() +  "," + (emg_activity_vector[index][5]).toString()  + "," + (emg_binary_activation_vector[index][5]).toString() +  "," + (emg_activity_vector[index][6]).toString()  + "," + (emg_binary_activation_vector[index][6]).toString()+  "," + (emg_activity_vector[index][7]).toString()  + "," + (emg_binary_activation_vector[index][7]).toString() + "," +
+														(imu2_yaw_vector[index]).toString() + "," + (imu2_pitch_vector[index]).toString() + "," + (imu2_roll_vector[index]).toString() + "," +
+														(imu3_yaw_vector[index]).toString() + "," + (imu3_pitch_vector[index]).toString() + "," + (imu3_roll_vector[index]).toString() + ");"
+										var sql = "INSERT INTO data_sessions (idSesion, Date, left_hip, right_hip, weight_gauge, direction, emg_muscle_activity_s1,  muscle_binary_activation_s1, emg_muscle_activity_s2,  muscle_binary_activation_s2, emg_muscle_activity_s3,  muscle_binary_activation_s3,  emg_muscle_activity_s4,  muscle_binary_activation_s4,  emg_muscle_activity_s5,  muscle_binary_activation_s5, emg_muscle_activity_s6,  muscle_binary_activation_s6, emg_muscle_activity_s7,  muscle_binary_activation_s7, emg_muscle_activity_s8, muscle_binary_activation_s8, imu2_Y, imu2_P, imu2_R, imu3_Y, imu3_P, imu3_R) VALUES " + insertDataRows;
+									}
+									else if(is_imu1_connected){
+										insertDataRows = "(" + (sessionID).toString() + "," + (time_stamp_vector[index]).toString() +","+
+														(rom_left_vector[index]).toString() + "," + (rom_right_vector[index]).toString()  + "," + (load_vector[index]).toString() + "," + (dir_vector).toString() +  "," + 
+														(emg_activity_vector[index][0]).toString() + "," + (emg_binary_activation_vector[index][0]).toString() + "," + (emg_activity_vector[index][1]).toString() + "," + (emg_binary_activation_vector[index][1]).toString() +  "," + (emg_activity_vector[index][2]).toString()  + "," + (emg_binary_activation_vector[index][2]).toString()+  "," + (emg_activity_vector[index][3]).toString()  + "," + (emg_binary_activation_vector[index][3]).toString() +  "," + (emg_activity_vector[index][4]).toString()  + "," + (emg_binary_activation_vector[index][4]).toString() +  "," + (emg_activity_vector[index][5]).toString()  + "," + (emg_binary_activation_vector[index][5]).toString() +  "," + (emg_activity_vector[index][6]).toString()  + "," + (emg_binary_activation_vector[index][6]).toString()+  "," + (emg_activity_vector[index][7]).toString()  + "," + (emg_binary_activation_vector[index][7]).toString() + "," +
+														(imu1_yaw_vector[index]).toString() + "," + (imu1_pitch_vector[index]).toString() + "," + (imu1_roll_vector[index]).toString() + ");"
+										var sql = "INSERT INTO data_sessions (idSesion, Date, left_hip, right_hip, weight_gauge, direction, emg_muscle_activity_s1,  muscle_binary_activation_s1, emg_muscle_activity_s2,  muscle_binary_activation_s2, emg_muscle_activity_s3,  muscle_binary_activation_s3,  emg_muscle_activity_s4,  muscle_binary_activation_s4,  emg_muscle_activity_s5,  muscle_binary_activation_s5, emg_muscle_activity_s6,  muscle_binary_activation_s6, emg_muscle_activity_s7,  muscle_binary_activation_s7, emg_muscle_activity_s8, muscle_binary_activation_s8, imu1_Y, imu1_P, imu1_R) VALUES " + insertDataRows;
+									}
+									else if(is_imu2_connected){
+										insertDataRows = "(" + (sessionID).toString() + "," + (time_stamp_vector[index]).toString() +","+
+														(rom_left_vector[index]).toString() + "," + (rom_right_vector[index]).toString()  + "," + (load_vector[index]).toString() + "," + (dir_vector).toString() +  "," + 
+														(emg_activity_vector[index][0]).toString() + "," + (emg_binary_activation_vector[index][0]).toString() + "," + (emg_activity_vector[index][1]).toString() + "," + (emg_binary_activation_vector[index][1]).toString() +  "," + (emg_activity_vector[index][2]).toString()  + "," + (emg_binary_activation_vector[index][2]).toString()+  "," + (emg_activity_vector[index][3]).toString()  + "," + (emg_binary_activation_vector[index][3]).toString() +  "," + (emg_activity_vector[index][4]).toString()  + "," + (emg_binary_activation_vector[index][4]).toString() +  "," + (emg_activity_vector[index][5]).toString()  + "," + (emg_binary_activation_vector[index][5]).toString() +  "," + (emg_activity_vector[index][6]).toString()  + "," + (emg_binary_activation_vector[index][6]).toString()+  "," + (emg_activity_vector[index][7]).toString()  + "," + (emg_binary_activation_vector[index][7]).toString() + "," +
+														(imu2_yaw_vector[index]).toString() + "," + (imu2_pitch_vector[index]).toString() + "," + (imu2_roll_vector[index]).toString() + ");"
+										var sql = "INSERT INTO data_sessions (idSesion, Date, left_hip, right_hip, weight_gauge, direction, emg_muscle_activity_s1,  muscle_binary_activation_s1, emg_muscle_activity_s2,  muscle_binary_activation_s2, emg_muscle_activity_s3,  muscle_binary_activation_s3,  emg_muscle_activity_s4,  muscle_binary_activation_s4,  emg_muscle_activity_s5,  muscle_binary_activation_s5, emg_muscle_activity_s6,  muscle_binary_activation_s6, emg_muscle_activity_s7,  muscle_binary_activation_s7, emg_muscle_activity_s8, muscle_binary_activation_s8, imu2_Y, imu2_P, imu2_R) VALUES " + insertDataRows;
+									}
+									else if(is_imu3_connected){
+										insertDataRows = "(" + (sessionID).toString() + "," + (time_stamp_vector[index]).toString() +","+
+														(rom_left_vector[index]).toString() + "," + (rom_right_vector[index]).toString()  + "," + (load_vector[index]).toString() + "," + (dir_vector).toString() +  "," + 
+														(emg_activity_vector[index][0]).toString() + "," + (emg_binary_activation_vector[index][0]).toString() + "," + (emg_activity_vector[index][1]).toString() + "," + (emg_binary_activation_vector[index][1]).toString() +  "," + (emg_activity_vector[index][2]).toString()  + "," + (emg_binary_activation_vector[index][2]).toString()+  "," + (emg_activity_vector[index][3]).toString()  + "," + (emg_binary_activation_vector[index][3]).toString() +  "," + (emg_activity_vector[index][4]).toString()  + "," + (emg_binary_activation_vector[index][4]).toString() +  "," + (emg_activity_vector[index][5]).toString()  + "," + (emg_binary_activation_vector[index][5]).toString() +  "," + (emg_activity_vector[index][6]).toString()  + "," + (emg_binary_activation_vector[index][6]).toString()+  "," + (emg_activity_vector[index][7]).toString()  + "," + (emg_binary_activation_vector[index][7]).toString() + "," +
+														(imu3_yaw_vector[index]).toString() + "," + (imu3_pitch_vector[index]).toString() + "," + (imu3_roll_vector[index]).toString() + ");"
+										var sql = "INSERT INTO data_sessions (idSesion, Date, left_hip, right_hip, weight_gauge, direction, emg_muscle_activity_s1,  muscle_binary_activation_s1, emg_muscle_activity_s2,  muscle_binary_activation_s2, emg_muscle_activity_s3,  muscle_binary_activation_s3,  emg_muscle_activity_s4,  muscle_binary_activation_s4,  emg_muscle_activity_s5,  muscle_binary_activation_s5, emg_muscle_activity_s6,  muscle_binary_activation_s6, emg_muscle_activity_s7,  muscle_binary_activation_s7, emg_muscle_activity_s8, muscle_binary_activation_s8, imu3_Y, imu3_P, imu3_R) VALUES " + insertDataRows;
+									}
+									// swalker and emg connected. No IMUs
+									 else {
+										insertDataRows = "(" + (sessionID).toString() + "," + (time_stamp_vector[index]).toString() +","+ 
+														(rom_left_vector[index]).toString() + "," + (rom_right_vector[index]).toString()  + "," + (load_vector[index]).toString() + "," + (dir_vector).toString() +  "," + 
+														(emg_activity_vector[index][0]).toString() + "," + (emg_binary_activation_vector[index][0]).toString() + "," + (emg_activity_vector[index][1]).toString() + "," + (emg_binary_activation_vector[index][1]).toString() +  "," + (emg_activity_vector[index][2]).toString()  + "," + (emg_binary_activation_vector[index][2]).toString()+  "," + (emg_activity_vector[index][3]).toString()  + "," + (emg_binary_activation_vector[index][3]).toString() +  "," + (emg_activity_vector[index][4]).toString()  + "," + (emg_binary_activation_vector[index][4]).toString() +  "," + (emg_activity_vector[index][5]).toString()  + "," + (emg_binary_activation_vector[index][5]).toString() +  "," + (emg_activity_vector[index][6]).toString()  + "," + (emg_binary_activation_vector[index][6]).toString()+  "," + (emg_activity_vector[index][7]).toString()  + "," + (emg_binary_activation_vector[index][7]).toString() + ");"
+										var sql = "INSERT INTO data_sessions (idSesion, Date, left_hip, right_hip, weight_gauge, direction, emg_muscle_activity_s1,  muscle_binary_activation_s1, emg_muscle_activity_s2,  muscle_binary_activation_s2, emg_muscle_activity_s3,  muscle_binary_activation_s3,  emg_muscle_activity_s4,  muscle_binary_activation_s4,  emg_muscle_activity_s5,  muscle_binary_activation_s5, emg_muscle_activity_s6,  muscle_binary_activation_s6, emg_muscle_activity_s7,  muscle_binary_activation_s7, emg_muscle_activity_s8, muscle_binary_activation_s8) VALUES " + insertDataRows;
+									}
 									
 								
 								
 								} else if(is_delsys_connected){
-									console.log("delsys connected")
+									if(is_imu1_connected & is_imu2_connected & is_imu3_connected){
+										insertDataRows = "(" + (sessionID).toString() + "," + (time_stamp_vector[index]).toString() +","+
+													(emg_activity_vector[index][0]).toString() + "," + (emg_binary_activation_vector[index][0]).toString() + "," + (emg_activity_vector[index][1]).toString() + "," + (emg_binary_activation_vector[index][1]).toString() +  "," + (emg_activity_vector[index][2]).toString()  + "," + (emg_binary_activation_vector[index][2]).toString()+  "," + (emg_activity_vector[index][3]).toString()  + "," + (emg_binary_activation_vector[index][3]).toString() +  "," + (emg_activity_vector[index][4]).toString()  + "," + (emg_binary_activation_vector[index][4]).toString() +  "," + (emg_activity_vector[index][5]).toString()  + "," + (emg_binary_activation_vector[index][5]).toString() +  "," + (emg_activity_vector[index][6]).toString()  + "," + (emg_binary_activation_vector[index][6]).toString()+  "," + (emg_activity_vector[index][7]).toString()  + "," + (emg_binary_activation_vector[index][7]).toString() + "," +
+													(imu1_yaw_vector[index]).toString() + "," + (imu1_pitch_vector[index]).toString() + "," + (imu1_roll_vector[index]).toString() + "," +
+													(imu2_yaw_vector[index]).toString() + "," + (imu2_pitch_vector[index]).toString() + "," + (imu2_roll_vector[index]).toString() + ","+
+													(imu3_yaw_vector[index]).toString() + "," + (imu3_pitch_vector[index]).toString() + "," + (imu3_roll_vector[index]).toString() + ");"
+										var sql = "INSERT INTO data_sessions (idSesion, Date, emg_muscle_activity_s1,  muscle_binary_activation_s1, emg_muscle_activity_s2,  muscle_binary_activation_s2, emg_muscle_activity_s3,  muscle_binary_activation_s3,  emg_muscle_activity_s4,  muscle_binary_activation_s4,  emg_muscle_activity_s5,  muscle_binary_activation_s5, emg_muscle_activity_s6,  muscle_binary_activation_s6, emg_muscle_activity_s7,  muscle_binary_activation_s7, emg_muscle_activity_s8, muscle_binary_activation_s8, imu1_Y, imu1_P, imu1_R, imu2_Y, imu2_P, imu2_R, imu3_Y, imu3_P, imu3_R) VALUES " + insertDataRows;
 								
-									// emg connected. No swalker.
-									insertDataRows = "(" + (sessionID).toString() + "," + (time_stamp_vector[index]).toString() +","+ 
-													(emg_activity_vector[index][0]).toString() + "," + (emg_binary_activation_vector[index][0]).toString() + "," + (emg_activity_vector[index][1]).toString() + "," + (emg_binary_activation_vector[index][1]).toString() +  "," + (emg_activity_vector[index][2]).toString()  + "," + (emg_binary_activation_vector[index][2]).toString()+  "," + (emg_activity_vector[index][3]).toString()  + "," + (emg_binary_activation_vector[index][3]).toString() +  "," + (emg_activity_vector[index][4]).toString()  + "," + (emg_binary_activation_vector[index][4]).toString() +  "," + (emg_activity_vector[index][5]).toString()  + "," + (emg_binary_activation_vector[index][5]).toString() +  "," + (emg_activity_vector[index][6]).toString()  + "," + (emg_binary_activation_vector[index][6]).toString()+  "," + (emg_activity_vector[index][7]).toString()  + "," + (emg_binary_activation_vector[index][7]).toString() + 
-													"," + tibiaL_accx[index].toString() + "," + tibiaL_accy[index].toString() + "," + tibiaL_accz[index].toString() + "," + tibiaR_accx[index].toString() + "," + tibiaR_accy[index].toString() + "," + tibiaR_accz[index].toString() + ");"
-
-									var sql = "INSERT INTO data_sessions (idSesion, Date, emg_muscle_activity_s1,  muscle_binary_activation_s1, emg_muscle_activity_s2,  muscle_binary_activation_s2, emg_muscle_activity_s3,  muscle_binary_activation_s3,  emg_muscle_activity_s4,  muscle_binary_activation_s4,  emg_muscle_activity_s5,  muscle_binary_activation_s5, emg_muscle_activity_s6,  muscle_binary_activation_s6, emg_muscle_activity_s7,  muscle_binary_activation_s7, emg_muscle_activity_s8, muscle_binary_activation_s8, accX_s7, accY_s7, accZ_s7, accX_s3, accY_s3, accZ_s3) VALUES " + insertDataRows;
+										
+									} else if(is_imu1_connected & is_imu2_connected){
+										insertDataRows = "(" + (sessionID).toString() + "," + (time_stamp_vector[index]).toString() +","+
+														(emg_activity_vector[index][0]).toString() + "," + (emg_binary_activation_vector[index][0]).toString() + "," + (emg_activity_vector[index][1]).toString() + "," + (emg_binary_activation_vector[index][1]).toString() +  "," + (emg_activity_vector[index][2]).toString()  + "," + (emg_binary_activation_vector[index][2]).toString()+  "," + (emg_activity_vector[index][3]).toString()  + "," + (emg_binary_activation_vector[index][3]).toString() +  "," + (emg_activity_vector[index][4]).toString()  + "," + (emg_binary_activation_vector[index][4]).toString() +  "," + (emg_activity_vector[index][5]).toString()  + "," + (emg_binary_activation_vector[index][5]).toString() +  "," + (emg_activity_vector[index][6]).toString()  + "," + (emg_binary_activation_vector[index][6]).toString()+  "," + (emg_activity_vector[index][7]).toString()  + "," + (emg_binary_activation_vector[index][7]).toString() + "," +
+														(imu1_yaw_vector[index]).toString() + "," + (imu1_pitch_vector[index]).toString() + "," + (imu1_roll_vector[index]).toString() + "," +
+														(imu2_yaw_vector[index]).toString() + "," + (imu2_pitch_vector[index]).toString() + "," + (imu2_roll_vector[index]).toString() + ");"
+										var sql = "INSERT INTO data_sessions (idSesion, Date, emg_muscle_activity_s1,  muscle_binary_activation_s1, emg_muscle_activity_s2,  muscle_binary_activation_s2, emg_muscle_activity_s3,  muscle_binary_activation_s3,  emg_muscle_activity_s4,  muscle_binary_activation_s4,  emg_muscle_activity_s5,  muscle_binary_activation_s5, emg_muscle_activity_s6,  muscle_binary_activation_s6, emg_muscle_activity_s7,  muscle_binary_activation_s7, emg_muscle_activity_s8, muscle_binary_activation_s8, imu1_Y, imu1_P, imu1_R, imu2_Y, imu2_P, imu2_R) VALUES " + insertDataRows;
+									}
+									else if(is_imu1_connected & is_imu3_connected){
+										insertDataRows = "(" + (sessionID).toString() + "," + (time_stamp_vector[index]).toString() +","+
+														(emg_activity_vector[index][0]).toString() + "," + (emg_binary_activation_vector[index][0]).toString() + "," + (emg_activity_vector[index][1]).toString() + "," + (emg_binary_activation_vector[index][1]).toString() +  "," + (emg_activity_vector[index][2]).toString()  + "," + (emg_binary_activation_vector[index][2]).toString()+  "," + (emg_activity_vector[index][3]).toString()  + "," + (emg_binary_activation_vector[index][3]).toString() +  "," + (emg_activity_vector[index][4]).toString()  + "," + (emg_binary_activation_vector[index][4]).toString() +  "," + (emg_activity_vector[index][5]).toString()  + "," + (emg_binary_activation_vector[index][5]).toString() +  "," + (emg_activity_vector[index][6]).toString()  + "," + (emg_binary_activation_vector[index][6]).toString()+  "," + (emg_activity_vector[index][7]).toString()  + "," + (emg_binary_activation_vector[index][7]).toString() + "," +
+														(imu1_yaw_vector[index]).toString() + "," + (imu1_pitch_vector[index]).toString() + "," + (imu1_roll_vector[index]).toString() + "," +
+														(imu3_yaw_vector[index]).toString() + "," + (imu3_pitch_vector[index]).toString() + "," + (imu3_roll_vector[index]).toString() + ");"
+										var sql = "INSERT INTO data_sessions (idSesion, Date, emg_muscle_activity_s1,  muscle_binary_activation_s1, emg_muscle_activity_s2,  muscle_binary_activation_s2, emg_muscle_activity_s3,  muscle_binary_activation_s3,  emg_muscle_activity_s4,  muscle_binary_activation_s4,  emg_muscle_activity_s5,  muscle_binary_activation_s5, emg_muscle_activity_s6,  muscle_binary_activation_s6, emg_muscle_activity_s7,  muscle_binary_activation_s7, emg_muscle_activity_s8, muscle_binary_activation_s8, imu1_Y, imu1_P, imu1_R, imu3_Y, imu3_P, imu3_R) VALUES " + insertDataRows;
+									}
+									else if(is_imu2_connected & is_imu3_connected){
+										insertDataRows = "(" + (sessionID).toString() + "," + (time_stamp_vector[index]).toString() +","+
+														(emg_activity_vector[index][0]).toString() + "," + (emg_binary_activation_vector[index][0]).toString() + "," + (emg_activity_vector[index][1]).toString() + "," + (emg_binary_activation_vector[index][1]).toString() +  "," + (emg_activity_vector[index][2]).toString()  + "," + (emg_binary_activation_vector[index][2]).toString()+  "," + (emg_activity_vector[index][3]).toString()  + "," + (emg_binary_activation_vector[index][3]).toString() +  "," + (emg_activity_vector[index][4]).toString()  + "," + (emg_binary_activation_vector[index][4]).toString() +  "," + (emg_activity_vector[index][5]).toString()  + "," + (emg_binary_activation_vector[index][5]).toString() +  "," + (emg_activity_vector[index][6]).toString()  + "," + (emg_binary_activation_vector[index][6]).toString()+  "," + (emg_activity_vector[index][7]).toString()  + "," + (emg_binary_activation_vector[index][7]).toString() + "," +
+														(imu2_yaw_vector[index]).toString() + "," + (imu2_pitch_vector[index]).toString() + "," + (imu2_roll_vector[index]).toString() + "," +
+														(imu3_yaw_vector[index]).toString() + "," + (imu3_pitch_vector[index]).toString() + "," + (imu3_roll_vector[index]).toString() + ");"
+										var sql = "INSERT INTO data_sessions (idSesion, Date, emg_muscle_activity_s1,  muscle_binary_activation_s1, emg_muscle_activity_s2,  muscle_binary_activation_s2, emg_muscle_activity_s3,  muscle_binary_activation_s3,  emg_muscle_activity_s4,  muscle_binary_activation_s4,  emg_muscle_activity_s5,  muscle_binary_activation_s5, emg_muscle_activity_s6,  muscle_binary_activation_s6, emg_muscle_activity_s7,  muscle_binary_activation_s7, emg_muscle_activity_s8, muscle_binary_activation_s8, imu2_Y, imu2_P, imu2_R, imu3_Y, imu3_P, imu3_R) VALUES " + insertDataRows;
+									}
+									else if(is_imu1_connected){
+										insertDataRows = "(" + (sessionID).toString() + "," + (time_stamp_vector[index]).toString() +","+
+														(emg_activity_vector[index][0]).toString() + "," + (emg_binary_activation_vector[index][0]).toString() + "," + (emg_activity_vector[index][1]).toString() + "," + (emg_binary_activation_vector[index][1]).toString() +  "," + (emg_activity_vector[index][2]).toString()  + "," + (emg_binary_activation_vector[index][2]).toString()+  "," + (emg_activity_vector[index][3]).toString()  + "," + (emg_binary_activation_vector[index][3]).toString() +  "," + (emg_activity_vector[index][4]).toString()  + "," + (emg_binary_activation_vector[index][4]).toString() +  "," + (emg_activity_vector[index][5]).toString()  + "," + (emg_binary_activation_vector[index][5]).toString() +  "," + (emg_activity_vector[index][6]).toString()  + "," + (emg_binary_activation_vector[index][6]).toString()+  "," + (emg_activity_vector[index][7]).toString()  + "," + (emg_binary_activation_vector[index][7]).toString() + "," +
+														(imu1_yaw_vector[index]).toString() + "," + (imu1_pitch_vector[index]).toString() + "," + (imu1_roll_vector[index]).toString() + ");"
+										var sql = "INSERT INTO data_sessions (idSesion, Date, emg_muscle_activity_s1,  muscle_binary_activation_s1, emg_muscle_activity_s2,  muscle_binary_activation_s2, emg_muscle_activity_s3,  muscle_binary_activation_s3,  emg_muscle_activity_s4,  muscle_binary_activation_s4,  emg_muscle_activity_s5,  muscle_binary_activation_s5, emg_muscle_activity_s6,  muscle_binary_activation_s6, emg_muscle_activity_s7,  muscle_binary_activation_s7, emg_muscle_activity_s8, muscle_binary_activation_s8, imu1_Y, imu1_P, imu1_R) VALUES " + insertDataRows;
+									}
+									else if(is_imu2_connected){
+										insertDataRows = "(" + (sessionID).toString() + "," + (time_stamp_vector[index]).toString() +","+
+														(emg_activity_vector[index][0]).toString() + "," + (emg_binary_activation_vector[index][0]).toString() + "," + (emg_activity_vector[index][1]).toString() + "," + (emg_binary_activation_vector[index][1]).toString() +  "," + (emg_activity_vector[index][2]).toString()  + "," + (emg_binary_activation_vector[index][2]).toString()+  "," + (emg_activity_vector[index][3]).toString()  + "," + (emg_binary_activation_vector[index][3]).toString() +  "," + (emg_activity_vector[index][4]).toString()  + "," + (emg_binary_activation_vector[index][4]).toString() +  "," + (emg_activity_vector[index][5]).toString()  + "," + (emg_binary_activation_vector[index][5]).toString() +  "," + (emg_activity_vector[index][6]).toString()  + "," + (emg_binary_activation_vector[index][6]).toString()+  "," + (emg_activity_vector[index][7]).toString()  + "," + (emg_binary_activation_vector[index][7]).toString() + "," +
+														(imu2_yaw_vector[index]).toString() + "," + (imu2_pitch_vector[index]).toString() + "," + (imu2_roll_vector[index]).toString() + ");"
+										var sql = "INSERT INTO data_sessions (idSesion, Date, emg_muscle_activity_s1,  muscle_binary_activation_s1, emg_muscle_activity_s2,  muscle_binary_activation_s2, emg_muscle_activity_s3,  muscle_binary_activation_s3,  emg_muscle_activity_s4,  muscle_binary_activation_s4,  emg_muscle_activity_s5,  muscle_binary_activation_s5, emg_muscle_activity_s6,  muscle_binary_activation_s6, emg_muscle_activity_s7,  muscle_binary_activation_s7, emg_muscle_activity_s8, muscle_binary_activation_s8, imu2_Y, imu2_P, imu2_R) VALUES " + insertDataRows;
+									}
+									else if(is_imu3_connected){
+										insertDataRows = "(" + (sessionID).toString() + "," + (time_stamp_vector[index]).toString() +","+
+														(emg_activity_vector[index][0]).toString() + "," + (emg_binary_activation_vector[index][0]).toString() + "," + (emg_activity_vector[index][1]).toString() + "," + (emg_binary_activation_vector[index][1]).toString() +  "," + (emg_activity_vector[index][2]).toString()  + "," + (emg_binary_activation_vector[index][2]).toString()+  "," + (emg_activity_vector[index][3]).toString()  + "," + (emg_binary_activation_vector[index][3]).toString() +  "," + (emg_activity_vector[index][4]).toString()  + "," + (emg_binary_activation_vector[index][4]).toString() +  "," + (emg_activity_vector[index][5]).toString()  + "," + (emg_binary_activation_vector[index][5]).toString() +  "," + (emg_activity_vector[index][6]).toString()  + "," + (emg_binary_activation_vector[index][6]).toString()+  "," + (emg_activity_vector[index][7]).toString()  + "," + (emg_binary_activation_vector[index][7]).toString() + "," +
+														(imu3_yaw_vector[index]).toString() + "," + (imu3_pitch_vector[index]).toString() + "," + (imu3_roll_vector[index]).toString() + ");"
+										var sql = "INSERT INTO data_sessions (idSesion, Date, emg_muscle_activity_s1,  muscle_binary_activation_s1, emg_muscle_activity_s2,  muscle_binary_activation_s2, emg_muscle_activity_s3,  muscle_binary_activation_s3,  emg_muscle_activity_s4,  muscle_binary_activation_s4,  emg_muscle_activity_s5,  muscle_binary_activation_s5, emg_muscle_activity_s6,  muscle_binary_activation_s6, emg_muscle_activity_s7,  muscle_binary_activation_s7, emg_muscle_activity_s8, muscle_binary_activation_s8, imu3_Y, imu3_P, imu3_R) VALUES " + insertDataRows;
+									}
+									// emg connected. No swalker and no IMUs
+									 else {
+										insertDataRows = "(" + (sessionID).toString() + "," + (time_stamp_vector[index]).toString() +","+ 
+														(emg_activity_vector[index][0]).toString() + "," + (emg_binary_activation_vector[index][0]).toString() + "," + (emg_activity_vector[index][1]).toString() + "," + (emg_binary_activation_vector[index][1]).toString() +  "," + (emg_activity_vector[index][2]).toString()  + "," + (emg_binary_activation_vector[index][2]).toString()+  "," + (emg_activity_vector[index][3]).toString()  + "," + (emg_binary_activation_vector[index][3]).toString() +  "," + (emg_activity_vector[index][4]).toString()  + "," + (emg_binary_activation_vector[index][4]).toString() +  "," + (emg_activity_vector[index][5]).toString()  + "," + (emg_binary_activation_vector[index][5]).toString() +  "," + (emg_activity_vector[index][6]).toString()  + "," + (emg_binary_activation_vector[index][6]).toString()+  "," + (emg_activity_vector[index][7]).toString()  + "," + (emg_binary_activation_vector[index][7]).toString() + ");"
+										var sql = "INSERT INTO data_sessions (idSesion, Date, emg_muscle_activity_s1,  muscle_binary_activation_s1, emg_muscle_activity_s2,  muscle_binary_activation_s2, emg_muscle_activity_s3,  muscle_binary_activation_s3,  emg_muscle_activity_s4,  muscle_binary_activation_s4,  emg_muscle_activity_s5,  muscle_binary_activation_s5, emg_muscle_activity_s6,  muscle_binary_activation_s6, emg_muscle_activity_s7,  muscle_binary_activation_s7, emg_muscle_activity_s8, muscle_binary_activation_s8) VALUES " + insertDataRows;
+									}
+									
 									
 									
 								} else if (is_swalker_connected){
-									
-									// swalker connected. No emg .
-
+									if(is_imu1_connected & is_imu2_connected & is_imu3_connected){
+										insertDataRows = "(" + (sessionID).toString() + "," + (time_stamp_vector[index]).toString() +","+
+													(rom_left_vector[index]).toString() + "," + (rom_right_vector[index]).toString()  + "," + (load_vector[index]).toString() + "," + (dir_vector).toString() +  "," + 
+													(imu1_yaw_vector[index]).toString() + "," + (imu1_pitch_vector[index]).toString() + "," + (imu1_roll_vector[index]).toString() + "," +
+													(imu2_yaw_vector[index]).toString() + "," + (imu2_pitch_vector[index]).toString() + "," + (imu2_roll_vector[index]).toString() + ","+
+													(imu3_yaw_vector[index]).toString() + "," + (imu3_pitch_vector[index]).toString() + "," + (imu3_roll_vector[index]).toString() + ");"
+										var sql = "INSERT INTO data_sessions (idSesion, Date, left_hip, right_hip, weight_gauge, direction, imu1_Y, imu1_P, imu1_R, imu2_Y, imu2_P, imu2_R, imu3_Y, imu3_P, imu3_R) VALUES " + insertDataRows;
+								
+										
+									} 
+									else if(is_imu1_connected & is_imu2_connected){
+										insertDataRows = "(" + (sessionID).toString() + "," + (time_stamp_vector[index]).toString() +","+
+														(rom_left_vector[index]).toString() + "," + (rom_right_vector[index]).toString()  + "," + (load_vector[index]).toString() + "," + (dir_vector).toString() +  "," + 
+														(imu1_yaw_vector[index]).toString() + "," + (imu1_pitch_vector[index]).toString() + "," + (imu1_roll_vector[index]).toString() + "," +
+														(imu2_yaw_vector[index]).toString() + "," + (imu2_pitch_vector[index]).toString() + "," + (imu2_roll_vector[index]).toString() + ");"
+										var sql = "INSERT INTO data_sessions (idSesion, Date, left_hip, right_hip, weight_gauge, direction, imu1_Y, imu1_P, imu1_R, imu2_Y, imu2_P, imu2_R) VALUES " + insertDataRows;
+									}
+									else if(is_imu1_connected & is_imu3_connected){
+										insertDataRows = "(" + (sessionID).toString() + "," + (time_stamp_vector[index]).toString() +","+
+														(rom_left_vector[index]).toString() + "," + (rom_right_vector[index]).toString()  + "," + (load_vector[index]).toString() + "," + (dir_vector).toString() +  "," + 
+														(imu1_yaw_vector[index]).toString() + "," + (imu1_pitch_vector[index]).toString() + "," + (imu1_roll_vector[index]).toString() + "," +
+														(imu3_yaw_vector[index]).toString() + "," + (imu3_pitch_vector[index]).toString() + "," + (imu3_roll_vector[index]).toString() + ");"
+										var sql = "INSERT INTO data_sessions (idSesion, Date, left_hip, right_hip, weight_gauge, direction, imu1_Y, imu1_P, imu1_R, imu3_Y, imu3_P, imu3_R) VALUES " + insertDataRows;
+									}
+									else if(is_imu2_connected & is_imu3_connected){
+										insertDataRows = "(" + (sessionID).toString() + "," + (time_stamp_vector[index]).toString() +","+
+														(rom_left_vector[index]).toString() + "," + (rom_right_vector[index]).toString()  + "," + (load_vector[index]).toString() + "," + (dir_vector).toString() +  "," + 
+														(imu2_yaw_vector[index]).toString() + "," + (imu2_pitch_vector[index]).toString() + "," + (imu2_roll_vector[index]).toString() + "," +
+														(imu3_yaw_vector[index]).toString() + "," + (imu3_pitch_vector[index]).toString() + "," + (imu3_roll_vector[index]).toString() + ");"
+										var sql = "INSERT INTO data_sessions (idSesion, Date, left_hip, right_hip, weight_gauge, direction, imu2_Y, imu2_P, imu2_R, imu3_Y, imu3_P, imu3_R) VALUES " + insertDataRows;
+									}
+									else if(is_imu1_connected){
+										insertDataRows = "(" + (sessionID).toString() + "," + (time_stamp_vector[index]).toString() +","+
+														(rom_left_vector[index]).toString() + "," + (rom_right_vector[index]).toString()  + "," + (load_vector[index]).toString() + "," + (dir_vector).toString() +  "," + 
+														(imu1_yaw_vector[index]).toString() + "," + (imu1_pitch_vector[index]).toString() + "," + (imu1_roll_vector[index]).toString() + ");"
+										var sql = "INSERT INTO data_sessions (idSesion, Date, left_hip, right_hip, weight_gauge, direction, imu1_Y, imu1_P, imu1_R) VALUES " + insertDataRows;
+									}
+									else if(is_imu2_connected){
+										insertDataRows = "(" + (sessionID).toString() + "," + (time_stamp_vector[index]).toString() +","+
+														(rom_left_vector[index]).toString() + "," + (rom_right_vector[index]).toString()  + "," + (load_vector[index]).toString() + "," + (dir_vector).toString() +  "," + 
+														(imu2_yaw_vector[index]).toString() + "," + (imu2_pitch_vector[index]).toString() + "," + (imu2_roll_vector[index]).toString() + ");"
+										var sql = "INSERT INTO data_sessions (idSesion, Date, left_hip, right_hip, weight_gauge, direction, imu2_Y, imu2_P, imu2_R) VALUES " + insertDataRows;
+									}
+									else if(is_imu3_connected){
+										insertDataRows = "(" + (sessionID).toString() + "," + (time_stamp_vector[index]).toString() +","+
+														(rom_left_vector[index]).toString() + "," + (rom_right_vector[index]).toString()  + "," + (load_vector[index]).toString() + "," + (dir_vector).toString() +  "," + 
+														(imu3_yaw_vector[index]).toString() + "," + (imu3_pitch_vector[index]).toString() + "," + (imu3_roll_vector[index]).toString() + ");"
+										var sql = "INSERT INTO data_sessions (idSesion, Date, left_hip, right_hip, weight_gauge, direction, imu3_Y, imu3_P, imu3_R) VALUES " + insertDataRows;
+									}
+									// swalker and emg connected. No IMUs
+									 else {
 										insertDataRows = "(" + (sessionID).toString() + "," + (time_stamp_vector[index]).toString() +","+ 
 														(rom_left_vector[index]).toString() + "," + (rom_right_vector[index]).toString()  + "," + (load_vector[index]).toString() + "," + (dir_vector).toString()  + ");"
 										var sql = "INSERT INTO data_sessions (idSesion, Date, left_hip, right_hip, weight_gauge, direction) VALUES " + insertDataRows;
+									}
 									
 									
+								} else {  //No EMG y No SWalker
+									if(is_imu1_connected & is_imu2_connected & is_imu3_connected){
+										insertDataRows = "(" + (sessionID).toString() + "," + (time_stamp_vector[index]).toString() +","+
+													(imu1_yaw_vector[index]).toString() + "," + (imu1_pitch_vector[index]).toString() + "," + (imu1_roll_vector[index]).toString() + "," +
+													(imu2_yaw_vector[index]).toString() + "," + (imu2_pitch_vector[index]).toString() + "," + (imu2_roll_vector[index]).toString() + ","+
+													(imu3_yaw_vector[index]).toString() + "," + (imu3_pitch_vector[index]).toString() + "," + (imu3_roll_vector[index]).toString() + ");"
+										var sql = "INSERT INTO data_sessions (idSesion, Date, imu1_Y, imu1_P, imu1_R, imu2_Y, imu2_P, imu2_R, imu3_Y, imu3_P, imu3_R) VALUES " + insertDataRows;
 								
+									} 
+									else if(is_imu1_connected & is_imu2_connected){
+										insertDataRows = "(" + (sessionID).toString() + "," + (time_stamp_vector[index]).toString() +","+
+														(imu1_yaw_vector[index]).toString() + "," + (imu1_pitch_vector[index]).toString() + "," + (imu1_roll_vector[index]).toString() + "," +
+														(imu2_yaw_vector[index]).toString() + "," + (imu2_pitch_vector[index]).toString() + "," + (imu2_roll_vector[index]).toString() + ");"
+										var sql = "INSERT INTO data_sessions (idSesion, Date, imu1_Y, imu1_P, imu1_R, imu2_Y, imu2_P, imu2_R) VALUES " + insertDataRows;
+									}
+									else if(is_imu1_connected & is_imu3_connected){
+										insertDataRows = "(" + (sessionID).toString() + "," + (time_stamp_vector[index]).toString() +","+
+														(imu1_yaw_vector[index]).toString() + "," + (imu1_pitch_vector[index]).toString() + "," + (imu1_roll_vector[index]).toString() + "," +
+														(imu3_yaw_vector[index]).toString() + "," + (imu3_pitch_vector[index]).toString() + "," + (imu3_roll_vector[index]).toString() + ");"
+										var sql = "INSERT INTO data_sessions (idSesion, Date, imu1_Y, imu1_P, imu1_R, imu3_Y, imu3_P, imu3_R) VALUES " + insertDataRows;
+									}
+									else if(is_imu2_connected & is_imu3_connected){
+										insertDataRows = "(" + (sessionID).toString() + "," + (time_stamp_vector[index]).toString() +","+
+														(imu2_yaw_vector[index]).toString() + "," + (imu2_pitch_vector[index]).toString() + "," + (imu2_roll_vector[index]).toString() + "," +
+														(imu3_yaw_vector[index]).toString() + "," + (imu3_pitch_vector[index]).toString() + "," + (imu3_roll_vector[index]).toString() + ");"
+										var sql = "INSERT INTO data_sessions (idSesion, Date, imu2_Y, imu2_P, imu2_R, imu3_Y, imu3_P, imu3_R) VALUES " + insertDataRows;
+									}
+									else if(is_imu1_connected){
+										insertDataRows = "(" + (sessionID).toString() + "," + (time_stamp_vector[index]).toString() +","+
+														(imu1_yaw_vector[index]).toString() + "," + (imu1_pitch_vector[index]).toString() + "," + (imu1_roll_vector[index]).toString() + ");"
+										var sql = "INSERT INTO data_sessions (idSesion, Date, imu1_Y, imu1_P, imu1_R) VALUES " + insertDataRows;
+									}
+									else if(is_imu2_connected){
+										insertDataRows = "(" + (sessionID).toString() + "," + (time_stamp_vector[index]).toString() +","+
+														(imu2_yaw_vector[index]).toString() + "," + (imu2_pitch_vector[index]).toString() + "," + (imu2_roll_vector[index]).toString() + ");"
+										var sql = "INSERT INTO data_sessions (idSesion, Date, imu2_Y, imu2_P, imu2_R) VALUES " + insertDataRows;
+									}
+									else if(is_imu3_connected){
+										insertDataRows = "(" + (sessionID).toString() + "," + (time_stamp_vector[index]).toString() +","+
+														(imu3_yaw_vector[index]).toString() + "," + (imu3_pitch_vector[index]).toString() + "," + (imu3_roll_vector[index]).toString() + ");"
+										var sql = "INSERT INTO data_sessions (idSesion, Date, imu3_Y, imu3_P, imu3_R) VALUES " + insertDataRows;
+									}
 								}
 								//console.log(sql);
 								con.query(sql, function (err, result) {
@@ -846,7 +1035,6 @@ io.on('connection', (socket) => {
 								});
 							}
 							console.log("Recorded Session Data");
-							socket.emit("monitoring:recorded_sessionData");
 						});
 					});
 			   });
@@ -891,7 +1079,7 @@ io.on('connection', (socket) => {
     })
 
     //DOWNLOAD SESSION DATA (DATABASE)
-    socket.on('download_sessions_data',function(idsesion){
+    socket.on('download_sessions_data',function( idsesion){
         console.log("Download Data")
         idsesion = idsesion;
         console.log(idsesion)
@@ -921,17 +1109,18 @@ io.on('connection', (socket) => {
             { header: 'Left TA muscle activation (1/0)', key: 'muscle_binary_activation_s7', width: 30 },
             { header: 'Left MG muscle activity', key: 'emg_muscle_activity_s8', width: 20 },
             { header: 'Left MG muscle activation (1/0)', key: 'muscle_binary_activation_s8', width: 30 },
-            { header: 'Left Tibia AccX', key: 'accX_s7', width: 30 },
-            { header: 'Left Tibia AccY', key: 'accY_s7', width: 30 },
-            { header: 'Left Tibia AccZ', key: 'accZ_s7', width: 30 },
-            { header: 'Right Tibia AccX', key: 'accX_s3', width: 30 },
-            { header: 'Right Tibia AccY', key: 'accY_s3', width: 30 },
-            { header: 'Right Tibia AccZ', key: 'accZ_s3', width: 30 },
-           
+            { header: 'Yaw IMU1', key: 'imu1_Y', width: 30 },
+            { header: 'Pitch IMU1', key: 'imu1_P', width: 30 },
+            { header: 'Roll IMU1', key: 'imu1_R', width: 30 },
+            { header: 'Yaw IMU2', key: 'imu2_Y', width: 30 },
+            { header: 'Pitch IMU2', key: 'imu2_P', width: 30 },
+            { header: 'Roll IMU2', key: 'imu2_R', width: 30 },
+            { header: 'Yaw IMU3', key: 'imu3_Y', width: 30 },
+            { header: 'Pitch IMU3', key: 'imu3_P', width: 30 },
+            { header: 'Roll IMU3', key: 'imu3_R', width: 30 },
 
         ];
-        var sql = "SELECT * FROM data_sessions WHERE idSesion=" + idsesion.toString() + ";";
-        console.log(sql);
+        var sql = "SELECT * FROM data_sessions WHERE iddata_sessions=" + idsesion.toString() + ";";
         con.query(sql, function (err, sessions_data) {
             if (err) throw err;
                 for (var i = 0; i < sessions_data.length; i++) {
@@ -1229,6 +1418,9 @@ io.on('connection', (socket) => {
             // EMG
             emg: emg_msg,
             emg_connection_status: is_delsys_connected,
+            imu1_connection_status: serial_imu1.isOpen,
+            imu2_connection_status: serial_imu2.isOpen,
+            imu3_connection_status: serial_imu2.isOpen
         })
     }, PLOTSAMPLINGTIME);
 
@@ -1265,9 +1457,16 @@ io.on('connection', (socket) => {
             socket.emit('monitoring:show_therapy_settings', {
                 patient_name : config.patient_name,
                 patient_age : config.patient_age,
-                patient_weight :  config.patient_weight,
+                weight :  config.weight,
                 gait_velocity :   config.gait_velocity,
+                rom :   config.rom,
                 pbws :   config.pbws,
+                steps :   config.steps,
+                traction_config: config.traction_config,
+                left_hip_config :   config.left_hip_config,
+                left_knee_config :   config.left_knee_config,
+                right_hip_config :   config.right_hip_config,
+                right_knee_config :   config.right_knee_config,
                 leg_length: config.leg_length
             })
         });
@@ -1328,7 +1527,7 @@ io.on('connection', (socket) => {
        disconnect_bt_device(socket, serial_imu1, is_imu1_connected, "imu1");
        
     });
-/*
+
     // Connect IMU 2
     socket.on('monitoring:connect_imu2', function(callbackFn) {
 		console.log(is_imu2_connected)
@@ -1359,7 +1558,7 @@ io.on('connection', (socket) => {
         disconnect_bt_device(socket, serial_imu3, is_imu3_connected, "imu3");
     });
 
-/
+
     // Disconnect IMUS
     socket.on('monitoring:disconnect_imus', function(callbackFn) {
 			imu1_yaw_vector = imu1_pitch_vector = imu1_roll_vector = []
@@ -1372,13 +1571,10 @@ io.on('connection', (socket) => {
 			disconnect_bt_device(socket, serial_imu3, is_imu3_connected, "imu3");
 		
     });
-    * */
 
     // Connect EMG
     socket.on('monitoring:connect_emg', function(callbackFn) {
 	    if (!is_delsys_connected) {
-			
-			// start port
 	        client_delsys_start.connect(DELSYS_START_PORT, DELSYS_PC_IP, function() {
 	            console.log('Connected to start');
 	        });  
@@ -1403,7 +1599,6 @@ io.on('connection', (socket) => {
                 }) 
             });   
 	            
-	        // EMG data port
 	        client_delsys_data.connect(DELSYS_DATA_PORT, DELSYS_PC_IP, function() {
                 console.log('Connected to data');
                 client_delsys_start.write('#startStream');
@@ -1426,23 +1621,7 @@ io.on('connection', (socket) => {
             });
             client_delsys_data.on('close', function() {
                 console.log('Delsys data closed');
-            });
-            
-            // AUX Acc data port
-            client_delsys_acc.connect(delsys_acc_port, DELSYS_PC_IP, function() {
-                console.log('Connected to acc');
-
-            }); 
-            client_delsysa_acc.on('error', function(ex) {
-                console.log(ex);
-                connect_delsys = false;
-            });
-            client_delsys_acc.on('end', function() {
-                console.log('Delsys acc ended');
-            });
-            client_delsys_acc.on('close', function() {
-                console.log('Delsys acc closed');
-            });
+            });  	        
 	    }
     });
     // Disconnect EMG
@@ -1453,7 +1632,6 @@ io.on('connection', (socket) => {
         }
 		client_delsys_start.destroy();
 		client_delsys_data.destroy();
-		client_delsys_acc.destroy();
 		is_delsys_connected = false;
         socket.emit('monitoring:connection_status', {
             device: "emg",
@@ -1512,14 +1690,16 @@ io.on('connection', (socket) => {
         // EMG
         emg_activity_vector = [];
         emg_binary_activation_vector = [];
-        // ACC
-        index_channel = 1;
-        tibiaR_accX = [];
-        tibiaR_accY = [];
-        tibiaR_accZ = [];
-        tibiaL_accX = [];
-        tibiaL_accY = [];
-        tibiaL_accZ = [];
+        // IMUS
+        imu1_pitch_vector = [];
+        imu1_yaw_vector = [];
+        imu1_roll_vector = [];
+        imu2_pitch_vector = [];
+        imu2_yaw_vector = [];
+        imu2_roll_vector = [];
+        imu3_pitch_vector = [];
+        imu3_yaw_vector = [];
+        imu3_roll_vector = [];
         
         // Start recording
         record_therapy = true;
@@ -1933,7 +2113,10 @@ function connect_bt_device(socket, bt_object, status_boolean, str_device){
 							}) 
 							if (str_device == "imu1"){
 								is_imu1_connected = true;
-							
+							} else if (str_device == "imu2"){
+								is_imu2_connected = true
+							} else if (str_device == "imu3"){
+								is_imu3_connected = true
 							}else if(str_device == "sw"){
 								is_swalker_connected = true;
 							}
@@ -2025,50 +2208,14 @@ function disconnect_bt_device(socket, bt_object, status_boolean, str_device){
 	
 		if (str_device == "imu1"){
 			is_imu1_connected = false;
-		} else if(str_device == "sw"){
+		} else if (str_device == "imu2"){
+			is_imu2_connected = false
+		} else if (str_device == "imu3"){
+			is_imu3_connected = false
+		}else if(str_device == "sw"){
 			is_swalker_connected = false;
 		}			
 	}
 	
 }
-
-function decodeFloat(buf, last_index_channel){
-	let index_channel = last_index_channel
-	let posInBuf = 0;
-	let len = Buffer.byteLength(buf);
-	
-	while (posInBuf < len){
-		var data = [buf[posInBuf+3], buf[posInBuf+2], buf[posInBuf+1], buf[posInBuf]];
-		var buf = new ArrayBuffer(4);
-		var view = new DataView(buf);
-		//set bytes
-		data.foreach(function(b,i){
-			view.setUint8(i,b);
-		});
-		let float = view.getFloat32(0);
-		posInBuf = posInBuf+4;
-		
-		if(record_therapy){
-			if (index_channel % 7 == 0){   //accx sensor 3
-				tibiaR_accX = float
-			} else if (index_channel % 8 == 0){
-				tibiaR_accY = float
-			} else if (index_channel % 9 == 0){
-				tibiaR_accZ = float
-			} else if (index_channel % 19 == 0){
-				tibiaL_accX = float
-			} else if (index_channel % 20 == 0){
-				tibiaL_accY = float
-			} else if (index_channel % 21 == 0){
-				tibiaL_accZ = float
-			}
-		}
-		
-		index_channel ++
-		
-	}
-	
-	return index_channel;
-}
-
 
