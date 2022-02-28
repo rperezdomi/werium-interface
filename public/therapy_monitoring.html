@@ -156,7 +156,7 @@
                         <div class="modal-body">
                         <p> Sigue los siguientes pasos para comenzar una nueva terapia: </p>
                         <p> &nbsp;&nbsp;&nbsp;&nbsp;<b>Step 1:</b>&nbsp;&nbsp; Encienda el SWalker y pulse el botón "Conectar SWalker". Espere hasta que el botón se ponga en verde. Si esto no ocurre, pulse Re-Conectar</p>
-                        <p> &nbsp;&nbsp;&nbsp;&nbsp;<b>Step 2</b>:&nbsp;&nbsp; Pulse el botón "NuevaTerapia" y espera 3 segundos. </p>
+                        <p> &nbsp;&nbsp;&nbsp;&nbsp;<b>Step 2</b>:&nbsp;&nbsp; Pulse el botón "Nueva Terapia" y espera 3 segundos. </p>
                         <p> &nbsp;&nbsp;&nbsp;&nbsp;<b>Step 3</b>:&nbsp;&nbsp; Utilice los botónes "Start" y "Stop" para marcar el inicio y el fin de la terapia.</p>
                         <p> &nbsp;&nbsp;&nbsp;&nbsp;<b>Step 5</b>:&nbsp;&nbsp; Pulse el botón "Guardar" para guardar los datos de la terapia. </p>
                         </div>
@@ -229,7 +229,7 @@
                             
                 <div class="container-fluid">
                     <div class="mb-3 d-flex justify-content-between ">
-                        <h3 class="text-dark mb-4">&nbsp;Monitor de Terapia  <button id="info" type="button" class="btn button" data-toggle="modal" data-target="#modalinfo"><i class="fas fa-info-circle" style="color:gray !important;"></i></button></h3>
+                        <h3 class="text-dark mb-4">&nbsp;Monitor de Terapia  <button id="info" type="button" class="btn button" data-toggle="modal" data-target="#modalinfo"><i class="fa fa-info-circle fa-lg" style="color:gray !important;"></i></button></h3>
                         
                     </div>
   
@@ -313,42 +313,205 @@
                             </div>
                         </form>
                     </div>
-                    <div id="jointCharts" class="card shadow mb-4">
-                        <div class="container-fluid">
-                            <br>
-                            <div class="row mb-3">
-                                <div class="col-lg-6">
-                                    <div class="card mb-3">
-                                        <div class="card-header d-flex justify-content-between align-items-center">
-                                            <h5 class="text-primary font-weight-bold m-0" style="width:100%; text-align: center;">Pierna Izquierda</h5>
-                                        </div>
-                                        <div class="card-body">
-                                            <div class="chart-area">
-                                                <div id="LeftHip">
-                                                    <canvas id="l_hip_chart"></canvas>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-lg-6">
-                                    <div class="card mb-3">
-                                        <div class="card-header d-flex justify-content-between align-items-center">
-                                            <h5 class="text-primary font-weight-bold m-0" style="width:100%; text-align: center;">Pierna Derecha</h5>
-                                        </div>
-                                        <div class="card-body">
-                                            <div class="chart-area">
-                                                <div id="rightLeftHip">
-                                                    <canvas id="r_hip_chart"></canvas>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                        </div>
-                    </div>
+					
+					<!-- TABS PARA LA NEVEGACION DE LAS DIFERENTES TABLAS-->
+					<ul class="nav nav-tabs" id="myTab_graphs" role="tablist">
+						<li class="nav-item" role="presentation">
+							<a class="nav-link active" id="ROM_tab" data-toggle="tab" href="#rom" role="tab" aria-controls="rom" aria-selected="true"> <h3> ROM </h3></a>
+						</li>
+						<li class="nav-item" role="presentation">
+							<a class="nav-link " id="EMG_tab2" data-toggle="tab" href="#emg2" role="tab" aria-controls="emg2" aria-selected="false"> <h3> EMG </h3></a>
+						</li>
+					</ul>
+					<!-- TABS CONTENT-->
+					<div class="tab-content">
+						<!-- GRAPHS FOR ROM DATA -->
+                        <div class="tab-pane fade show active" id="rom" role="tabpanel">
+							<div id="jointCharts" class="card shadow mb-4">
+								<div class="container-fluid">
+									<br>
+									<div class="row mb-3">
+										<div class="col-lg-6">
+											<div class="card mb-3">
+												<div class="card-header d-flex justify-content-between align-items-center">
+													<h5 class="text-primary font-weight-bold m-0" style="width:100%;text-align: center;">Cadera Izquierda</h5>
+												</div>
+												<div class="card-body">
+													<div class="chart-area" >
+														<div id="LeftHip">
+															<canvas id="l_hip_chart"></canvas>
+														</div>
+													</div>
+												</div>
+											</div>
+										</div>
+										<div class="col-lg-6">
+											<div class="card mb-3">
+												<div class="card-header d-flex justify-content-between align-items-center">
+													<h5 class="text-primary font-weight-bold m-0" style="width:100%; text-align: center;">Cadera Derecha</h5>
+												</div>
+												<div class="card-body">
+													<div class="chart-area">
+														<div id="rightLeftHip">
+															<canvas id="r_hip_chart"></canvas>
+														</div>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+						<!-- GRAPHS FOR EMG DATA -->
+                        <div class="tab-pane fade" id="emg2" role="tabpanel">
+							<div id="emgCharts_rf" class="card shadow mb-4" >
+								<div class="container-fluid">
+									<br>
+									<div class="row mb-3">
+										<div class="col-lg-6">
+											<div class="card mb-3">
+												<div class="card-header d-flex justify-content-between align-items-center">
+													<h5 class="text-primary font-weight-bold m-0" style="width:100%; height:50%; text-align: center;">Recto Femoral Izquierdo</h5>
+												</div>
+												<div class="card-body">
+													<div class="chart-area">
+														<div id="rf_left">
+															<canvas id="rf_left_chart"></canvas>
+														</div>
+													</div>
+												</div>
+											</div>
+										</div>
+										<div class="col-lg-6">
+											<div class="card mb-3">
+												<div class="card-header d-flex justify-content-between align-items-center">
+													<h5 class="text-primary font-weight-bold m-0" style="width:100%; text-align: center;">Recto Femoral Derecho</h5>
+												</div>
+												<div class="card-body">
+													<div class="chart-area">
+														<div id="rf_right">
+															<canvas id="rf_right_chart"></canvas>
+														</div>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+							
+							<div id="emgCharts_bf" class="card shadow mb-4" >
+								<div class="container-fluid">
+									<br>
+									<div class="row mb-3">
+										<div class="col-lg-6">
+											<div class="card mb-3">
+												<div class="card-header d-flex justify-content-between align-items-center">
+													<h5 class="text-primary font-weight-bold m-0" style="width:100%; text-align: center;">Biceps Femoral Izquierdo</h5>
+												</div>
+												<div class="card-body">
+													<div class="chart-area">
+														<div id="bf_left">
+															<canvas id="bf_left_chart"></canvas>
+														</div>
+													</div>
+												</div>
+											</div>
+										</div>
+										<div class="col-lg-6">
+											<div class="card mb-3">
+												<div class="card-header d-flex justify-content-between align-items-center">
+													<h5 class="text-primary font-weight-bold m-0" style="width:100%; text-align: center;">Biceps Femoral Derecho</h5>
+												</div>
+												<div class="card-body">
+													<div class="chart-area">
+														<div id="bf_right">
+															<canvas id="bf_right_chart"></canvas>
+														</div>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+							<div id="emgCharts_ta" class="card shadow mb-4" >
+								<div class="container-fluid">
+									<br>
+									<div class="row mb-3">
+										<div class="col-lg-6">
+											<div class="card mb-3">
+												<div class="card-header d-flex justify-content-between align-items-center">
+													<h5 class="text-primary font-weight-bold m-0" style="width:100%; text-align: center;">Tibial Anterior Izquierdo</h5>
+												</div>
+												<div class="card-body">
+													<div class="chart-area">
+														<div id="ta_left">
+															<canvas id="ta_left_chart"></canvas>
+														</div>
+													</div>
+												</div>
+											</div>
+										</div>
+										<div class="col-lg-6">
+											<div class="card mb-3">
+												<div class="card-header d-flex justify-content-between align-items-center">
+													<h5 class="text-primary font-weight-bold m-0" style="width:100%; text-align: center;">Tibial Anterior Derecho</h5>
+												</div>
+												<div class="card-body">
+													<div class="chart-area">
+														<div id="ta_right">
+															<canvas id="ta_right_chart"></canvas>
+														</div>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+							<div id="emgCharts_gm" class="card shadow mb-4" >
+								<div class="container-fluid">
+									<br>
+									<div class="row mb-3">
+										<div class="col-lg-6">
+											<div class="card mb-3">
+												<div class="card-header d-flex justify-content-between align-items-center">
+													<h5 class="text-primary font-weight-bold m-0" style="width:100%; text-align: center;">Gemelo Medial Izquierdo</h5>
+												</div>
+												<div class="card-body">
+													<div class="chart-area">
+														<div id="gm_left">
+															<canvas id="gm_left_chart"></canvas>
+														</div>
+													</div>
+												</div>
+											</div>
+										</div>
+										<div class="col-lg-6">
+											<div class="card mb-3">
+												<div class="card-header d-flex justify-content-between align-items-center">
+													<h5 class="text-primary font-weight-bold m-0" style="width:100%; text-align: center;">Gemelo Medial Izquierdo</h5>
+												</div>
+												<div class="card-body">
+													<div class="chart-area">
+														<div id="gm_right">
+															<canvas id="gm_right_chart"></canvas>
+														</div>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+							
+						
+						</div>
+					</div>
+					<!-- GRAPHS FOR ROM EMG -->
+                        
 
                     <!-- TABS PARA LA NEVEGACION DE LAS DIFERENTES TABLAS-->
                     <ul class="nav nav-tabs" id="myTab" role="tablist">

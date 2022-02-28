@@ -17,6 +17,7 @@ var track = audioContext.createMediaElementSource(audioElement);
 
 //** Global variables **//
 var THERAPY_MONITOR_GOTO_LINK;
+var i_counter = 1;
 
 // SWalker variables 
 var rom_right;
@@ -34,7 +35,7 @@ var current_step = 0;
 var step_left = 0;
 
 // Therapy variables
-var is_dataRecorded = false;
+var is_dataRecorded = true;
 var therapy_started = false;
 var therapy_reestart = false;
 var numberElements_right;
@@ -75,19 +76,27 @@ window.onload = function() {
 	//Globals
 	var updateCounter_right = 0;
 	var updateCounter_left = 0;
-	//var updateCount = 0;
+	// tab emg envelope
+	var updateCounter_right_envelope = 0;
+	var updateCounter_left_envelope = 0;
 
 	// Chart Objects
-	// Joint objects
+	// Joint objects (HIP ROM)
 	var ctxrhip = document.getElementById('r_hip_chart').getContext('2d');
 	var ctxlhip = document.getElementById('l_hip_chart').getContext('2d');
-	//var ctxrknee = document.getElementById('r_knee_chart').getContext('2d');
-	//var ctxlknee = document.getElementById('l_knee_chart').getContext('2d');
-	// Joint charts sizes:
-	ctxrhip.canvas.height = 340;
+	// Joint objects (EMG envelope)
+	var ctxrfleft
+	var ctxrfright 
+	var ctxbfleft 
+	var ctxbfright 
+	var ctxtaleft
+	var ctxtaright
+	var ctxgmleft
+	var ctxgmright
+	// Joint charts sizes (HIP ROM):
 	ctxlhip.canvas.height = 340;
-	//ctxrknee.canvas.height = 340;
-	//ctxlknee.canvas.height = 340;
+	ctxrhip.canvas.height = 340;
+	
 
 	//*********************************//
 	//** JOINT CHARTS CONFIGURATION  **//
@@ -123,13 +132,12 @@ window.onload = function() {
 			}],
 			yAxes: [{
 				ticks: {
-                                        display: true,
+                    //display: false,
 					max: 50,    // maximum will be 70, unless there is a lower value.
 					min: -30    // minimum will be -10, unless there is a lower value.
                                         
 				},
 				scaleLabel: {
-                                        
 					display: true,
 					labelString: 'Grados (º)'
 				}
@@ -144,6 +152,62 @@ window.onload = function() {
 		elements: {
 			line: {
 				tension: 0.1 // disables bezier curves
+			}
+		}
+	};
+	
+	var commonJointsOptions_EMG = {
+		font: {
+			size: 16
+		},
+		scales: {
+			xAxes: [{
+				type: 'time',
+    			time: {
+					parser: 'mm-ss-SSS',
+        			tooltipFormat: 'HH:mm',
+        			displayFormats: {
+            			millisecond: 'mm:ss.SSS',
+            			second: 'mm:ss',
+            			minute: 'mm'
+        			}
+    			},
+				scaleLabel: {
+					fontSize: 18,
+					display: true,
+					labelString: 'Tiempo (s)'
+				},
+				ticks: {
+					fontSize: 18,
+					autoSkip: true,
+					sampleSize: 5,
+					maxRotation: 0,
+					minRotation: 0
+				}
+			}],
+			yAxes: [{
+				ticks: {
+					max: 0.5,
+					min: 0
+				},
+				scaleLabel: {
+					display:true,
+					labelString: 'm Voltios (mV)'
+				}
+			}]
+		},
+		
+		maintainAspectRatio: false,
+		//showLines: false, // disable for a single dataset
+		animation: {
+			duration: 0 // general animation time
+		},
+		elements: {
+			line: {
+				tension: 0.1 // disables bezier curves
+			},
+			point:{
+				radius: 0
 			}
 		}
 	};
@@ -168,7 +232,8 @@ window.onload = function() {
 				borderColor:'#14540d', 
 				pointBorderWidth: [1.5],
 				pointBorderColor: ['#14540d'],
-				pointBackgroundColor: ['#14540d']
+				pointBackgroundColor: ['#14540d'],
+				showLine: false
 
 			},{
 				label: '[S2] Biceps Femoral',					// S2: isquitibial
@@ -179,7 +244,8 @@ window.onload = function() {
 				borderColor:'#4B0082',
 				pointBorderWidth: [1.5],
 				pointBorderColor: ['#4B0082'],
-				pointBackgroundColor: ['#4B0082']
+				pointBackgroundColor: ['#4B0082'],
+				showLine: false
 			}]
 		},
 		options: Object.assign({}, commonJointsOptions)		
@@ -197,6 +263,7 @@ window.onload = function() {
 				borderWidth: 1.5,
 				pointBorderWidth: [],
 				pointStyle: 'line'
+			
 			},{
 				label: '[S5] Recto Femoral',			// S5: Recto femoral
 				data: 0,
@@ -206,7 +273,8 @@ window.onload = function() {
 				borderColor:'#14540d',
 				pointBorderWidth: [1.5],
 				pointBorderColor: ['#14540d'],
-				pointBackgroundColor: ['#14540d']
+				pointBackgroundColor: ['#14540d'],
+				showLine: false
 
 			},{
 				label: '[S6] Biceps Femoral',		// S6: Isquitobial
@@ -217,19 +285,201 @@ window.onload = function() {
 				borderColor:'#4B0082',
 				pointBorderWidth: [1.5],
 				pointBorderColor: ['#4B0082'],
-				pointBackgroundColor: ['#4B0082']
+				pointBackgroundColor: ['#4B0082'],
+				showLine: false
 			}]
 		},
 		options: Object.assign({}, commonJointsOptions)    
 	});
 	
+	var ctxrfleftInstance
+	var ctxrfrightInstance
+	var ctxbfleftInstance
+	var ctxbfrightInstance
+	var ctxtarightInstance
+	var ctxtaleftInstance
+	var ctxgmleftInstance
+	var ctxgmrightInstance
+
+	var rendered = false;
+	var ctx_emg_envelope_data_objects;
+	
+	$('#ROM_tab').on('shown.bs.tab', function (event) {
+		rendered=false;
+	});
+	$('#EMG_tab2').on('shown.bs.tab', function (event) {
+		console.log("hwn");
+		
+		ctxrfleft = document.getElementById('rf_left_chart').getContext('2d');
+		ctxrfright = document.getElementById('rf_right_chart').getContext('2d');
+		ctxbfleft = document.getElementById('bf_left_chart').getContext('2d');
+		ctxbfright = document.getElementById('bf_right_chart').getContext('2d');
+		ctxtaleft = document.getElementById('ta_left_chart').getContext('2d');
+		ctxtaright = document.getElementById('ta_right_chart').getContext('2d');
+		ctxgmleft = document.getElementById('gm_left_chart').getContext('2d');
+		ctxgmright = document.getElementById('gm_right_chart').getContext('2d');
+		ctxrfleft.canvas.height = 340;
+		ctxrfright.canvas.height = 340;
+		ctxbfleft.canvas.height = 340;
+		ctxbfright.canvas.height = 340;
+		ctxtaleft.canvas.height = 340;
+		ctxtaright.canvas.height = 340;
+		ctxgmleft.canvas.height = 340;
+		ctxgmright.canvas.height = 340;
+		
+		ctxrfleftInstance = new Chart(ctxrfleft, {
+			type: 'line',
+			data: {
+				datasets: [{
+					label: 'EMG',
+					data: 0,
+					fill: false,
+					borderColor: '#FF2626',
+					borderWidth: 1.5
+				}]
+			},
+			options: Object.assign({}, commonJointsOptions_EMG)    
+		});
+		ctxrfrightInstance = new Chart(ctxrfright, {
+			type: 'line',
+			data: {
+				datasets: [{
+					label: 'EMG',
+					data: [],
+					fill: false,
+					borderColor: '#FF2626',
+					borderWidth: 1.5
+				}]
+			},
+			options: Object.assign({}, commonJointsOptions_EMG)    
+		});	
+		ctxbfleftInstance = new Chart(ctxbfleft, {
+			type: 'line',
+			data: {
+				datasets: [{
+					label: 'EMG',
+					data: [],
+					fill: false,
+					borderColor: '#FF2626',
+					borderWidth: 1.5
+				}]
+			},
+			options: Object.assign({}, commonJointsOptions_EMG)    
+		});
+		ctxbfrightInstance = new Chart(ctxbfright, {
+			type: 'line',
+			data: {
+				datasets: [{
+					label: 'EMG',
+					data: 0,
+					fill: false,
+					borderColor: '#FF2626',
+					borderWidth: 1.5
+				}]
+			},
+			options: Object.assign({}, commonJointsOptions_EMG)    
+		});
+		ctxtaleftInstance = new Chart(ctxtaleft, {
+			type: 'line',
+			data: {
+				datasets: [{
+					label: 'EMG',
+					data: 0,
+					fill: false,
+					borderColor: '#FF2626',
+					borderWidth: 1.5
+				}]
+			},
+			options: Object.assign({}, commonJointsOptions_EMG)    
+		});
+		ctxtaleftInstance = new Chart(ctxtaleft, {
+			type: 'line',
+			data: {
+				datasets: [{
+					label: 'EMG',
+					data: 0,
+					fill: false,
+					borderColor: '#FF2626',
+					borderWidth: 1.5
+				}]
+			},
+			options: Object.assign({}, commonJointsOptions_EMG)    
+		});
+		ctxtarightInstance= new Chart(ctxtaright, {
+			type: 'line',
+			data: {
+				datasets: [{
+					label: 'EMG',
+					data: 0,
+					fill: false,
+					borderColor: '#FF2626',
+					borderWidth: 1.5
+				}]
+			},
+			options: Object.assign({}, commonJointsOptions_EMG)    
+		});
+		ctxgmleftInstance = new Chart(ctxgmleft, {
+			type: 'line',
+			data: {
+				datasets: [{
+					label: 'EMG',
+					data: 0,
+					fill: false,
+					borderColor: '#FF2626',
+					borderWidth: 1.5
+				}]
+			},
+			options: Object.assign({}, commonJointsOptions_EMG)    
+		});
+		ctxgmrightInstance = new Chart(ctxgmright, {
+			type: 'line',
+			data: {
+				datasets: [{
+					label: 'EMG',
+					data: 0,
+					fill: false,
+					borderColor: '#FF2626'
+				}]
+			},
+			options: Object.assign({}, commonJointsOptions_EMG)    
+		});
+		
+		ctx_emg_envelope_data_objects = [ctxrfrightInstance.data.datasets[0], ctxbfrightInstance.data.datasets[0], ctxtarightInstance.data.datasets[0], ctxgmrightInstance.data.datasets[0],
+										ctxrfleftInstance.data.datasets[0], ctxbfleftInstance.data.datasets[0],ctxtaleftInstance.data.datasets[0], ctxgmleftInstance.data.datasets[0]];
+
+		rendered = true;
+		empty_envelope_graphs()
+
+	});
+	
+	function empty_envelope_graphs(){
+		if(rendered){
+			updateCounter_left_envelope = 0;
+			updateCounter_right_envelope = 0;
+
+			
+			//reset hip rom labels and datasets
+			for (var i = 0; i < ctx_emg_real_data_objects.length ; i++) {
+				ctx_emg_envelope_data_objects[i].data = [];	
+			}
+			ctxrfrightInstance.data.labels = [];
+			ctxrfleftInstance.data.labels = [];
+			ctxbfleftInstance.data.labels = [];
+			ctxbfrightInstance.data.labels = [];
+			ctxtarightInstance.data.labels = [];
+			ctxtaleftInstance.data.labels = [];
+			ctxgmleftInstance.data.labels = [];
+			ctxgmrightInstance.data.labels = [];
+		}
+	}
+		
 	// Vars used for objects agrupation
 	var ctx_emg_real_data_objects =  [ctxrhipInstance.data.datasets[1], ctxrhipInstance.data.datasets[2], ctxlhipInstance.data.datasets[1], ctxlhipInstance.data.datasets[2]];
 	var ctx_rom_data_objects = [ctxrhipInstance.data.datasets[0],  ctxlhipInstance.data.datasets[0]]
-
-	//var imu1_is_connected = imu2_is_connected = imu3_is_connected = 
-	is_swalker_connected = emg_enabled = false;
+	is_swalker_connected = false;
+	emg_enabled = false;
 	
+
 	//** Data incomming from the Webserver (index) **//
 	socket.on('monitoring:jointData', (data) => {
 		is_swalker_connected = data.swalker_connection_status;
@@ -254,12 +504,10 @@ window.onload = function() {
 				document.getElementById("enable_emg").innerHTML = "Desconectar EMG";
 				document.getElementById("enable_emg").style.background = "#fd4e4e";
 			}
-
 			emg = JSON.parse(emg_data).emg;
 			threshold_errors = JSON.parse(emg_data).threshold_errors;
 			threshold_values = JSON.parse(emg_data).threshold_values;
 			binary_activation_values = JSON.parse(emg_data).binary_activation_values;
-
 			max_amplitude_value = JSON.parse(emg_data).max_emg_values;
 		}
 
@@ -267,6 +515,7 @@ window.onload = function() {
 			// Initialize values when therapy reestarts
 			therapy_reestart = false;
 			emptyJointGraphs();   /////////////////////////////////////////////////////////////////////////////////// incomplete
+			empty_envelope_graphs();
 		}
 		
 		// Hide/show legend and data.
@@ -308,16 +557,12 @@ window.onload = function() {
 			// swalker
 			if (is_swalker_connected){
 				// show y axis label and ticks
-				//commonJointsOptions.scales.yAxes[0].ticks.display = true;
-                               // commonJointsOptions.scales.yAxes[0].scaleLabel.display = true;
-				// update supported weight
+				//update supported weight
 				document.getElementById("supported_weight").innerHTML =  (100*load/patient_weight); 
 
 				// update dataset rom values
-				pushDataValue(rom_right, ctxrhipInstance.data.datasets[0], 10, '#FF2626');
-				pushDataValue(rom_right, ctxrhipInstance.data.datasets[0], 1.5, '#FF2626');
-				pushDataValue(rom_left, ctxlhipInstance.data.datasets[0], 10, '#FF2626');
-				pushDataValue(rom_left, ctxlhipInstance.data.datasets[0], 1.5, '#FF2626');
+				pushDataValue(rom_right, ctxrhipInstance.data.datasets[0], 0, '#FF2626');
+				pushDataValue(rom_left, ctxlhipInstance.data.datasets[0], 0, '#FF2626');
 			} 
 
 			//emg
@@ -328,10 +573,6 @@ window.onload = function() {
 			var upperLeg_emg = [emg[0], emg[1], emg[4], emg[5]]
 
 			if (emg_enabled){
-				//ctxlhipInstance.options.scales.yAxes[0].ticks.display = true;
-   				//ctxlhipInstance.options.scales.yAxes[0].scaleLabel.display = true;
-                                //ctxrhipInstance.options.scales.yAxes[0].ticks.dislpay = true;
-				//ctxrhipInstance.options.scales.yAxes[0].scaleLabel.display =  true;
 
 				for (var i = 0; i < ctx_emg_real_data_objects.length ; i++) {
 					// define current dataset
@@ -349,32 +590,33 @@ window.onload = function() {
 					// define colors
 					currentColorList = define_valueColor(i);
 					currentColor, currentWidth = getSampleColorWidth(upperLeg_emg[i], upperLeg_max_amplitude_values[i], currentColorList);
-					console.log(currentColor);
 					// Check muscle activation. If muscle activated, normalize the value up to the maximum one, then update point color. If not, make it transparent.
-					if((upperLeg_binary_activation_values[i] == 1) && (upperLeg_threshold_errors[i] == 0)){
-						
+					if((upperLeg_binary_activation_values[i] == 1) && (upperLeg_threshold_errors[i] == 0)){	
 						pushDataValue(upperLeg_y_activation_values[i], real, currentWidth, currentColor);
 						
 					}else{
 						pushDataValue(upperLeg_y_activation_values[i], real, 0, "#ff000000");
 					}			
+					
+					 
 				}
 			}
 			
 			if (is_swalker_connected | emg_enabled){
 							
 					// update labels
-					var segundos = Math.trunc(updateCounter_left/20);
-					var milisegundos = Math.trunc((updateCounter_left/20 - segundos)*1000)
+					var segundos = Math.trunc(updateCounter_left/10);
+					var milisegundos = Math.trunc((updateCounter_left/10 - segundos)*1000)
 					var minutos = Math.trunc(segundos/60);
 					segundos = segundos - minutos*60; 
 					var label = minutos + '-' + segundos + '-' + milisegundos;
 
 					ctxlhipInstance.data.labels.push(label);
 					ctxrhipInstance.data.labels.push(label);
-						
+					
+					
 				// delete first element to keep the graph in movement. PlotSampling data reception: 20Hz --> 2 segundos: 40muestras
-				if((updateCounter_right > 60)){
+				if((updateCounter_right > 49)){
 					
 					ctxrhipInstance.data.labels.shift();
 					ctxlhipInstance.data.labels.shift();
@@ -415,29 +657,120 @@ window.onload = function() {
 						ctxlhipInstance.data.datasets[1].pointBorderColor.shift();
 						ctxrhipInstance.data.datasets[2].pointBorderColor.shift();
 						ctxlhipInstance.data.datasets[2].pointBorderColor.shift();
+						
 					}
 					
 				} 
+				
+				
 			}	
 			
 		} else {
-			ctxlhipInstance.data.labels = ['00:00', '02:00'];
-			ctxrhipInstance.data.labels = ['00:00', '02:00'];
+			//ROM
+			ctxlhipInstance.data.labels = ['00:00', '05:00'];
+			ctxrhipInstance.data.labels = ['00:00', '05:00'];			
+			
+			
+		}
+		
+		// add data to envelope plots. This data will be shown either the therapy is started or not
+		if(rendered){
+			//tab EMG envelope
+			if(emg_enabled){
+				//console.log(updateCounter_right_envelope);
+				//update labels envelop
+				var segundos = Math.trunc(updateCounter_left_envelope/10);
+				var milisegundos = (updateCounter_left_envelope/10*1000 - segundos*1000)
+				var minutos = Math.trunc(segundos/60);
+				segundos = segundos - minutos*60; 
+				var label = minutos + '-' + segundos + '-' + milisegundos;
+
+				ctxrfleftInstance.data.labels.push(label);
+				ctxrfrightInstance.data.labels.push(label);
+				ctxbfleftInstance.data.labels.push(label);
+				ctxbfrightInstance.data.labels.push(label);
+				ctxtarightInstance.data.labels.push(label);
+				ctxtaleftInstance.data.labels.push(label);
+				ctxgmleftInstance.data.labels.push(label);
+				ctxgmrightInstance.data.labels.push(label);
+				
+				ctxrfleftInstance.data.datasets[0].data.push(emg[0]*1000);
+				ctxrfrightInstance.data.datasets[0].data.push(emg[1]*1000);
+				ctxbfleftInstance.data.datasets[0].data.push(emg[0]*1000);
+				ctxbfrightInstance.data.datasets[0].data.push(emg[3]*1000);
+				ctxtarightInstance.data.datasets[0].data.push(emg[4]*1000);
+				ctxtaleftInstance.data.datasets[0].data.push(emg[5]*1000);
+				ctxgmleftInstance.data.datasets[0].data.push(emg[6]*1000);
+				ctxgmrightInstance.data.datasets[0].data.push(emg[7]*1000);
+		
+				
+				if( updateCounter_right_envelope >  49){
+					
+					ctxrfleftInstance.data.labels.shift();
+					ctxrfrightInstance.data.labels.shift();
+					ctxbfrightInstance.data.labels.shift();
+					ctxbfleftInstance.data.labels.shift();
+					ctxtaleftInstance.data.labels.shift();
+					ctxtarightInstance.data.labels.shift();
+					ctxgmrightInstance.data.labels.shift();
+					ctxgmleftInstance.data.labels.shift();
+					
+					ctxrfleftInstance.data.datasets[0].data.shift();
+					ctxrfrightInstance.data.datasets[0].data.shift();
+					ctxbfleftInstance.data.datasets[0].data.shift();
+					ctxbfrightInstance.data.datasets[0].data.shift();
+					ctxtarightInstance.data.datasets[0].data.shift();
+					ctxtaleftInstance.data.datasets[0].data.shift();
+					ctxgmleftInstance.data.datasets[0].data.shift();
+					ctxgmrightInstance.data.datasets[0].data.shift();
+				}
+				
+			} else {
+				
+				ctxrfleftInstance.data.labels = ['00:00', '05:00'];
+				ctxrfrightInstance.data.labels = ['00:00', '05:00'];
+				ctxbfleftInstance.data.labels = ['00:00', '05:00'];
+				ctxbfrightInstance.data.labels = ['00:00', '05:00'];
+				ctxtaleftInstance.data.labels = ['00:00', '05:00'];
+				ctxtarightInstance.data.labels = ['00:00', '05:00'];
+				ctxgmleftInstance.data.labels = ['00:00', '05:00'];
+				ctxgmrightInstance.data.labels = ['00:00', '05:00'];
+			}
+	
 		}
 
 		//// update counters and refresh graphs
 		///////////////////////////////////////
 		updateCounter_right ++;
 		updateCounter_left ++;
-
+		
+		
+		// ROM
 		ctxrhipInstance.update();
 		ctxlhipInstance.update();
+		//EMG
+		if(rendered){
+			updateCounter_left_envelope ++;
+			updateCounter_right_envelope ++;
+		
+			ctxrfleftInstance.update();
+			ctxrfrightInstance.update();
+			ctxbfleftInstance.update();
+			ctxbfrightInstance.update();
+			ctxtaleftInstance.update();
+			ctxtarightInstance.update();
+			ctxgmleftInstance.update();
+			ctxgmrightInstance.update();
+		}
+			
+		
 	})
 	
 
 	socket.on("monitoring:recorded_sessionData", (data) => {
-		console.log("recorded!");
-		is_data_recorded = true;
+		is_dataRecorded = true;
+		document.getElementById("save_data").value = "Saved";
+		
 	})
 
 	document.getElementById("connect_swalker").onclick = function() {
@@ -455,6 +788,7 @@ window.onload = function() {
 			document.getElementById("connect_swalker").style.background = "#808080";
 			socket.emit('monitoring:disconnect_swalker');
 			emptyJointGraphs();
+			empty_envelope_graphs();
 
 		} else if (document.getElementById("connect_swalker").value == "connecting") {
 			document.getElementById("connect_swalker").value = "off";
@@ -462,6 +796,7 @@ window.onload = function() {
 			document.getElementById("connect_swalker").style.background = "#eb0a0a";
 			socket.emit('monitoring:disconnect_swalker');
 			emptyJointGraphs();
+			empty_envelope_graphs();
 		}
 	}	
 
@@ -487,10 +822,12 @@ window.onload = function() {
 				document.getElementById("start_stop").style.background = "#0968e4";
 				document.getElementById("start_stop").style.borderColor = "#0968e4";
 				therapy_started = false;
-				socket.emit('monitoring:stop'); 
-				current_step = 0;
-				emptyJointGraphs();
+				
 			}
+			socket.emit('monitoring:stop'); 
+			current_step = 0;
+			emptyJointGraphs();
+			empty_envelope_graphs();
 			
 			document.getElementById("enable_emg").value = "off";
 			document.getElementById("enable_emg").innerHTML = "Conectar EMG";
@@ -555,7 +892,8 @@ window.onload = function() {
 	//	is_swalker_connected = true
 		if (is_swalker_connected || emg_enabled){
 			if (document.getElementById("start_stop").value == "start_calibration") {
-				if (!is_dataRecorded){
+				if (is_dataRecorded){
+					
 					document.getElementById("start_stop").value = "countdown";
 					console.log("start_stop");
 					if (is_swalker_connected){
@@ -607,6 +945,7 @@ window.onload = function() {
 				socket.emit('monitoring:stop'); 
 				current_step = 0;
 				emptyJointGraphs();
+				empty_envelope_graphs();
 			}
 		} else {
 			console.log("no device connected");
@@ -618,12 +957,13 @@ window.onload = function() {
 	document.getElementById("save_data").onclick = function() {
 		if (document.getElementById("save_data").value == "not_saved") { 
 			// Change button style
-			document.getElementById("save_data").value = "saved";
+			document.getElementById("save_data").value = "Saving...";
 			document.getElementById("save_data").innerHTML = "Datos Guardados";
 			document.getElementById("save_data").style.background = "#0968e4";
 			document.getElementById("save_data").style.display = 'none';
 			
 			is_dataRecorded = false;
+			
 			// Save configurtion 
 			socket.emit('addsesiondata')
 			socket.emit('monitoring:save_emg')
@@ -633,8 +973,6 @@ window.onload = function() {
 	};
 	
 	
-
-
 	// Advise: changing window and will stop therapy
 	document.getElementById("indexHTML").onclick = function() {
 		preventChange();
@@ -790,10 +1128,10 @@ window.onload = function() {
 	  sendTraction(socket, direction_char);
 
 	  document.querySelector('.circle').style.background = '#00008b';
-	  document.querySelector('.arrow_right').style.background = "background: #0968e4";
-	  document.querySelector('.arrow_left').style.background = "background: #0968e4";
-	  document.querySelector('.arrow_fordward').style.background = "background: #0968e4";
-	  document.querySelector('.arrow_backwards').style.background = "background: #0968e4";
+	  document.querySelector('.arrow_right').style.background = "#0968e4";
+	  document.querySelector('.arrow_left').style.background = "#0968e4";
+	  document.querySelector('.arrow_fordward').style.background = "#0968e4";
+	  document.querySelector('.arrow_backwards').style.background = "#0968e4";
 	}
 
 	// Animate and get the selected direction of motion
@@ -1042,7 +1380,6 @@ function define_valueColor(i){
 	}
 
 	currentColorList = [currentColor1, currentColor2, currentColor3, currentColor4, currentColor5]
-	console.log(currentColorList);
 	return currentColorList
 
 }
@@ -1070,7 +1407,6 @@ function getSampleColorWidth(current_emg_value, max_value, currentColorList){
 		currentColor = currentColorList[4];
 		currentWidth = 11;
 	}
-	console.log(currentColor, currentWidth);
 	return currentColor, currentWidth;
 }
 
