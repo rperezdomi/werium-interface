@@ -28,7 +28,8 @@ var therapyConfigPath = path.join(__dirname, 'config','therapySettings.json');
 // Execute python program to control the rehaStym when server starts
 const python = spawn('python', ['rehaStym_configuration.py']);
 
-const PLOTSAMPLINGTIME = 50; //ms
+const PLOTSAMPLINGTIME = 10
+0; //ms
 const GAMESSAMPLINGTIME = 50;
 
 const swBluetoothName = 'RNBT-4CEE';
@@ -96,7 +97,7 @@ client_delsys_data.on('data', function(data) {
                 // End of the message
                 msg_data = false;
                 emg_msg = received_data;
-                //console.log(JSON.parse(emg_msg).binary_activation_values)
+                //console.log(JSON.parse(emg_msg).emg)
                 received_data = "";
                 //found = true;
                 
@@ -129,12 +130,13 @@ client_delsys_data.on('data', function(data) {
 });
 
 var index_channel = 1;
-client_delsys_acc.on('data', function(data) {
+/*client_delsys_acc.on('data', function(msg) {
+    var len = Buffer.byteLength(msg)
+	
+    index_channel = decodeFloat(msg, index_channel);
     
-    index_channel = decodeFloat(buf, index_channel);
     
-    
-});
+});*/
 
 /////////////////////////////////
 //** Webserver configuration **//
@@ -746,38 +748,27 @@ io.on('connection', (socket) => {
             var terapist_id = "SELECT idtabla_terapeutas from tabla_terapeutas where NombreTerapeuta in ('" + (config.therapist_name.split(" "))[0] +"') AND ApellidoTerapeuta in ('" + (config.therapist_name.split(" "))[1] +"'); ";
             var patient_id = "SELECT idtabla_pacientes from tabla_pacientes where NombrePaciente in ('" + (config.patient_name.split(" "))[0] +"') AND ApellidoPaciente in ('" + (config.patient_name.split(" "))[(config.patient_name.split(" ").length) -1] +"'); ";
             var IDs = terapist_id + patient_id
-            console.log(IDs);
             con.query(IDs , [1,2], function (err, result) {
                 if (err) throw err;
-                console.log(result[1]);
                 patient_id = result[1][0].idtabla_pacientes;
                 terapist_id = result[0][0].idtabla_terapeutas;
                 patient_leg_length = config.leg_length;
-				console.log(patient_leg_length);
                 var n_session = "SELECT COUNT(NumberSession) AS count from tabla_sesion WHERE idPaciente =" + patient_id + ";"
                 con.query(n_session, function (err, result) {
 					if (err) throw err;
-					console.log(result);
 					n_session = result[0].count +1;
-					console.log('---------------')
 			
 					var sessionConfig = [patient_id, n_session, terapist_id, config.gait_velocity, config.observations];
 					
 					var surgery = config.surgery;
 					con.query(sql,[sessionConfig], function (err, result) {
-						console.log("wwwwwwww");
 						if (err) throw err;
-						console.log("Recorded Session");
 						// Save Data of the session
 						var sessionID = "SELECT idtable_session from tabla_sesion ORDER BY idtable_session DESC LIMIT 1;";
 						con.query(sessionID , function (err, sessionID) {
 							if (err) throw err;
 							// Get last session ID
-							console.log(sessionID)
-							console.log(sessionID[0].idtable_session)
 							sessionID = sessionID[0].idtable_session;
-							console.log("------");
-							//console.log(sessionID[0].idTable_session)
 							// Prepare joints angles data of the last session
 							var insertDataRows = ""
 							if (is_swalker_connected){
@@ -786,10 +777,7 @@ io.on('connection', (socket) => {
 								var total_length = emg_activity_vector.length;
 							} 
 							
-							console.log(total_length)
-							
 							for (let index = 0; index < total_length; index++) {
-								
 								if(is_swalker_connected){
 									if (direction_vector[index] == 's'){
 										var dir_vector =  0;
@@ -805,25 +793,24 @@ io.on('connection', (socket) => {
 										var dir_vector = 5;
 									}
 								}    
-								
+																
 								if ((is_swalker_connected & is_delsys_connected)) {
 									
 									insertDataRows = "(" + (sessionID).toString() + "," + (time_stamp_vector[index]).toString() +","+ 
 													(rom_left_vector[index]).toString() + "," + (rom_right_vector[index]).toString()  + "," + (load_vector[index]).toString() + "," + (dir_vector).toString() +  "," + 
 													(emg_activity_vector[index][0]).toString() + "," + (emg_binary_activation_vector[index][0]).toString() + "," + (emg_activity_vector[index][1]).toString() + "," + (emg_binary_activation_vector[index][1]).toString() +  "," + (emg_activity_vector[index][2]).toString()  + "," + (emg_binary_activation_vector[index][2]).toString()+  "," + (emg_activity_vector[index][3]).toString()  + "," + (emg_binary_activation_vector[index][3]).toString() +  "," + (emg_activity_vector[index][4]).toString()  + "," + (emg_binary_activation_vector[index][4]).toString() +  "," + (emg_activity_vector[index][5]).toString()  + "," + (emg_binary_activation_vector[index][5]).toString() +  "," + (emg_activity_vector[index][6]).toString()  + "," + (emg_binary_activation_vector[index][6]).toString()+  "," + (emg_activity_vector[index][7]).toString()  + "," + (emg_binary_activation_vector[index][7]).toString() + 
-													"," + tibiaL_accx[index].toString() + "," + tibiaL_accy[index].toString() + "," + tibiaL_accz[index].toString() + "," + tibiaR_accx[index].toString() + "," + tibiaR_accy[index].toString() + "," + tibiaR_accz[index].toString() + ");"
+													"," + tibiaL_accX_vector[index].toString() + "," + tibiaL_accY_vector[index].toString() + "," + tibiaL_accZ_vector[index].toString() + "," + tibiaR_accX_vector[index].toString() + "," + tibiaR_accY_vector[index].toString() + "," + tibiaR_accZ_vector[index].toString() + ");"
 									var sql = "INSERT INTO data_sessions (idSesion, Date, left_hip, right_hip, weight_gauge, direction, emg_muscle_activity_s1,  muscle_binary_activation_s1, emg_muscle_activity_s2,  muscle_binary_activation_s2, emg_muscle_activity_s3,  muscle_binary_activation_s3,  emg_muscle_activity_s4,  muscle_binary_activation_s4,  emg_muscle_activity_s5,  muscle_binary_activation_s5, emg_muscle_activity_s6,  muscle_binary_activation_s6, emg_muscle_activity_s7,  muscle_binary_activation_s7, emg_muscle_activity_s8, muscle_binary_activation_s8, accX_s7, accY_s7, accZ_s7, accX_s3, accY_s3, accZ_s3) VALUES " + insertDataRows;
 									
 									
 								
 								
 								} else if(is_delsys_connected){
-									console.log("delsys connected")
 								
 									// emg connected. No swalker.
 									insertDataRows = "(" + (sessionID).toString() + "," + (time_stamp_vector[index]).toString() +","+ 
 													(emg_activity_vector[index][0]).toString() + "," + (emg_binary_activation_vector[index][0]).toString() + "," + (emg_activity_vector[index][1]).toString() + "," + (emg_binary_activation_vector[index][1]).toString() +  "," + (emg_activity_vector[index][2]).toString()  + "," + (emg_binary_activation_vector[index][2]).toString()+  "," + (emg_activity_vector[index][3]).toString()  + "," + (emg_binary_activation_vector[index][3]).toString() +  "," + (emg_activity_vector[index][4]).toString()  + "," + (emg_binary_activation_vector[index][4]).toString() +  "," + (emg_activity_vector[index][5]).toString()  + "," + (emg_binary_activation_vector[index][5]).toString() +  "," + (emg_activity_vector[index][6]).toString()  + "," + (emg_binary_activation_vector[index][6]).toString()+  "," + (emg_activity_vector[index][7]).toString()  + "," + (emg_binary_activation_vector[index][7]).toString() + 
-													"," + tibiaL_accx[index].toString() + "," + tibiaL_accy[index].toString() + "," + tibiaL_accz[index].toString() + "," + tibiaR_accx[index].toString() + "," + tibiaR_accy[index].toString() + "," + tibiaR_accz[index].toString() + ");"
+													"," + tibiaL_accX_vector[index].toString() + "," + tibiaL_accY_vector[index].toString() + "," + tibiaL_accZ_vector[index].toString() + "," + tibiaR_accX_vector[index].toString() + "," + tibiaR_accY_vector[index].toString() + "," + tibiaR_accZ_vector[index].toString() + ");"
 
 									var sql = "INSERT INTO data_sessions (idSesion, Date, emg_muscle_activity_s1,  muscle_binary_activation_s1, emg_muscle_activity_s2,  muscle_binary_activation_s2, emg_muscle_activity_s3,  muscle_binary_activation_s3,  emg_muscle_activity_s4,  muscle_binary_activation_s4,  emg_muscle_activity_s5,  muscle_binary_activation_s5, emg_muscle_activity_s6,  muscle_binary_activation_s6, emg_muscle_activity_s7,  muscle_binary_activation_s7, emg_muscle_activity_s8, muscle_binary_activation_s8, accX_s7, accY_s7, accZ_s7, accX_s3, accY_s3, accZ_s3) VALUES " + insertDataRows;
 									
@@ -1215,7 +1202,31 @@ io.on('connection', (socket) => {
     // and send UDP data to the platform (called in move.js)
 
     socket.on('traction:message', (data) => {
-        moveManually(data);
+		//Get command value
+		direction_char  = data.direction_char;
+		speed_char = therapy_speed;
+		if (therapy_speed == "high"){
+			speed_char = 'f';
+		} else if (therapy_speed == 'slow'){
+			speed_char = 's';
+		} else{
+			speed_char = 'n';
+		}
+
+		var cmd = ''
+		//Command var to send
+		if (direction_char == 'b' | direction_char == 'f'){
+			cmd = '#'+ direction_char + speed_char;
+		} else {
+			cmd = '#'+ direction_char;
+		}
+
+		//send command cmd to swalker
+		console.log(cmd)
+		var buf = Buffer.from(cmd, 'utf8');
+		serial_swalker.write(buf)
+		.then(() => console.log('Data successfully written'))
+		.catch((err) => console.log('Error while sending command to SWALKERII', err))
     })
 
     // Send data to the charts in therapy monitoring
@@ -1433,7 +1444,7 @@ io.on('connection', (socket) => {
                 console.log('Connected to acc');
 
             }); 
-            client_delsysa_acc.on('error', function(ex) {
+            client_delsys_acc.on('error', function(ex) {
                 console.log(ex);
                 connect_delsys = false;
             });
@@ -1513,14 +1524,19 @@ io.on('connection', (socket) => {
         emg_activity_vector = [];
         emg_binary_activation_vector = [];
         // ACC
-        index_channel = 1;
-        tibiaR_accX = [];
-        tibiaR_accY = [];
-        tibiaR_accZ = [];
-        tibiaL_accX = [];
-        tibiaL_accY = [];
-        tibiaL_accZ = [];
-        
+        tibiaR_accX_vector = [];
+        tibiaR_accY_vector = [];
+        tibiaR_accZ_vector = [];
+        tibiaR_accX = 0;
+        tibiaR_accY = 0;
+        tibiaR_accZ = 0;
+        tibiaL_accX_vector = [];
+        tibiaL_accY_vector = [];
+        tibiaL_accZ_vector = [];
+        tibiaL_accX = 0;
+        tibiaL_accY = 0;
+        tibiaL_accZ = 0;
+
         // Start recording
         record_therapy = true;
 
@@ -1731,36 +1747,6 @@ function DDBB_addConfigData(config_data){
 		});
 	})
 }
-
-function moveManually(data) {  
-
-    //Get values
-    direction_char  = data.direction_char;
-    speed_char = therapy_speed;
-    if (therapy_speed == "high"){
-		speed_char = 'f';
-	} else if (therapy_speed == 'slow'){
-		speed_char = 's';
-	} else{
-		speed_char = 'n';
-	}
-
-    var cmd = ''
-    //Command var to send
-    if (direction_char == 'b' | direction_char == 'f'){
-        cmd = '#'+ direction_char + speed_char;
-    } else {
-        cmd = '#'+ direction_char;
-    }
-
-    //send command cmd to swalker
-    console.log(cmd)
-    var buf = Buffer.from(cmd, 'utf8');
-    serial_swalker.write(buf)
-    .then(() => console.log('Data successfully written'))
-    .catch((err) => console.log('Error en l.', err))
-}
-
 
 // Configure swalker to start the therapy. Set ROM calibration in stance position.
 function configureStartPos(romR, romL) {
@@ -2032,35 +2018,39 @@ function disconnect_bt_device(socket, bt_object, status_boolean, str_device){
 	
 }
 
-function decodeFloat(buf, last_index_channel){
-	let index_channel = last_index_channel
+function decodeFloat(buf1, last_index){
+	let index_channel = last_index
+
 	let posInBuf = 0;
-	let len = Buffer.byteLength(buf);
+	let len = Buffer.byteLength(buf1);
 	
-	while (posInBuf < len){
-		var data = [buf[posInBuf+3], buf[posInBuf+2], buf[posInBuf+1], buf[posInBuf]];
+	while (posInBuf < (len/4)){
+		var data = [buf1[posInBuf+3], buf1[posInBuf+2], buf1[posInBuf+1], buf1[posInBuf]];
 		var buf = new ArrayBuffer(4);
 		var view = new DataView(buf);
 		//set bytes
-		data.foreach(function(b,i){
+		data.forEach(function(b,i){
 			view.setUint8(i,b);
 		});
 		let float = view.getFloat32(0);
+		
 		posInBuf = posInBuf+4;
 		
 		if(record_therapy){
-			if (index_channel % 7 == 0){   //accx sensor 3
+			if (index_channel  == 7){   //accx sensor 3
 				tibiaR_accX = float
-			} else if (index_channel % 8 == 0){
-				tibiaR_accY = float
-			} else if (index_channel % 9 == 0){
+			} else if (index_channel == 8){
+				tibiaR_accY = float;
+			} else if (index_channel == 9){
 				tibiaR_accZ = float
-			} else if (index_channel % 19 == 0){
+			} else if (index_channel ==19){
 				tibiaL_accX = float
-			} else if (index_channel % 20 == 0){
+			} else if (index_channel == 20){
 				tibiaL_accY = float
-			} else if (index_channel % 21 == 0){
+			} else if (index_channel == 21) {
 				tibiaL_accZ = float
+			} else if(index_channel == 48){
+				index_channel = 0;
 			}
 		}
 		
@@ -2068,7 +2058,8 @@ function decodeFloat(buf, last_index_channel){
 		
 	}
 	
-	return index_channel;
+	return last_index;
+	
 }
 
 

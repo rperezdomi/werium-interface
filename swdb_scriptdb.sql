@@ -52,7 +52,7 @@ CREATE TABLE IF NOT EXISTS `swdb`.`data_sessions` (
   `accZ_s7` FLOAT NULL DEFAULT NULL,
   `accX_s3` FLOAT NULL DEFAULT NULL,
   `accY_s3` FLOAT NULL DEFAULT NULL,
-  `accZ s3` FLOAT NULL DEFAULT NULL,
+  `accZ_s3` FLOAT NULL DEFAULT NULL,
    PRIMARY KEY (`iddata_sessions`))
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8mb4
@@ -66,9 +66,9 @@ CREATE TABLE IF NOT EXISTS `swdb`.`tabla_pacientes` (
   `idtabla_pacientes` INT NOT NULL AUTO_INCREMENT,
   `NombrePaciente` VARCHAR(45) NULL DEFAULT NULL,
   `ApellidoPaciente` VARCHAR(45) NULL DEFAULT NULL,
-  `patiente_age` INT NULL DEFAULT NULL,
-  `patiente_weight` INT NULL DEFAULT NULL,
-  `leg_length` INT NULL DEFAULT NULL,
+  `patiente_age` VARCHAR(45) NULL DEFAULT NULL,
+  `patiente_weight`VARCHAR(45) NULL DEFAULT NULL,
+  `leg_length` VARCHAR(45) NULL DEFAULT NULL,
   `estado_fisico` VARCHAR(45) NULL DEFAULT NULL,
   `estado_cognitivo` VARCHAR(45) NULL DEFAULT NULL,
   `surgery` VARCHAR(45) NULL DEFAULT NULL,
