@@ -60,7 +60,10 @@ window.onload = function(){
 	if ((document.referrer == 'http://192.168.43.1:3000/users_games.html') | (document.referrer == 'http://192.168.43.1:3000/index.html') |  (document.referrer == '')){
 		$("#myModal").modal('show');
 		
-
+	}
+	// Same in case the interface is being opened from localhost
+	if ((document.referrer == 'http://localhost:3000/users_games.html') | (document.referrer == 'http://localhost:3000/index.html') |  (document.referrer == '')){
+		$("#myModal").modal('show');
 		
 	}
 	
@@ -94,8 +97,8 @@ window.onload = function(){
 		let device= data.device;
 		let status= data.status;
 		console.log(data);
-		
-		if ((document.referrer == 'http://192.168.43.1:3000/users_games.html') | (document.referrer == 'http://192.168.43.1:3000/index.html') |  (document.referrer == '')){
+		//if ((document.referrer == 'http://192.168.43.1:3000/users_games.html') | (document.referrer == 'http://192.168.43.1:3000/index.html')) {
+		//|  ((document.referrer == '') | document.referrer == 'http://localhost:3000/users_games.html')) | (document.referrer == 'http://localhost:3000/index.html')){
 			if (document.getElementById("connect_sensor").value == "connecting"){
 				if(device == 'imu1'){
 					if (status==0){
@@ -123,10 +126,10 @@ window.onload = function(){
 				document.getElementById("connect_sensor").style.background = "#4e73df";		
 			}
 			
-		} else {
+		//} else {
 			
 			
-		}
+		//}
 	});
 
 	document.getElementById("connect_sensor").onclick = function() {
