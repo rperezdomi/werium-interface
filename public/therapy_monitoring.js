@@ -187,7 +187,7 @@ window.onload = function() {
 			}],
 			yAxes: [{
 				ticks: {
-					max: 0.5,
+					max: 0.1,
 					min: 0
 				},
 				scaleLabel: {
@@ -438,7 +438,8 @@ window.onload = function() {
 					label: 'EMG',
 					data: 0,
 					fill: false,
-					borderColor: '#FF2626'
+					borderColor: '#FF2626',
+					borderWidth: 1.5
 				}]
 			},
 			options: Object.assign({}, commonJointsOptions_EMG)    
@@ -478,8 +479,7 @@ window.onload = function() {
 	var ctx_rom_data_objects = [ctxrhipInstance.data.datasets[0],  ctxlhipInstance.data.datasets[0]]
 	is_swalker_connected = false;
 	emg_enabled = false;
-	
-
+	var n_counter = 0;	
 	//** Data incomming from the Webserver (index) **//
 	socket.on('monitoring:jointData', (data) => {
 		is_swalker_connected = data.swalker_connection_status;
@@ -488,8 +488,6 @@ window.onload = function() {
 		rom_left = data.rom_left;
 		emg_enabled = data.emg_connection_status;
 		emg_data = data.emg;     // json
-
-   
 		// Avoid errors in case EMG is not connected
 		if ((emg_data.length == 0  || JSON.parse(emg_data).emg == undefined) || (!emg_enabled)) {
 			emg = [0,0,0,0,0,0,0,0];
@@ -694,14 +692,14 @@ window.onload = function() {
 				ctxgmleftInstance.data.labels.push(label);
 				ctxgmrightInstance.data.labels.push(label);
 				
-				ctxrfleftInstance.data.datasets[0].data.push(emg[0]*1000);
-				ctxrfrightInstance.data.datasets[0].data.push(emg[1]*1000);
-				ctxbfleftInstance.data.datasets[0].data.push(emg[0]*1000);
-				ctxbfrightInstance.data.datasets[0].data.push(emg[3]*1000);
-				ctxtarightInstance.data.datasets[0].data.push(emg[4]*1000);
-				ctxtaleftInstance.data.datasets[0].data.push(emg[5]*1000);
-				ctxgmleftInstance.data.datasets[0].data.push(emg[6]*1000);
-				ctxgmrightInstance.data.datasets[0].data.push(emg[7]*1000);
+				ctxrfrightInstance.data.datasets[0].data.push(emg[0]*1000);
+				ctxbfrightInstance.data.datasets[0].data.push(emg[1]*1000);
+				ctxtarightInstance.data.datasets[0].data.push(emg[2]*1000);
+				ctxgmrightInstance.data.datasets[0].data.push(emg[3]*1000);
+				ctxrfleftInstance.data.datasets[0].data.push(emg[4]*1000);
+				ctxbfleftInstance.data.datasets[0].data.push(emg[5]*1000);
+				ctxtaleftInstance.data.datasets[0].data.push(emg[6]*1000);
+				ctxgmleftInstance.data.datasets[0].data.push(emg[7]*1000);
 		
 				
 				if( updateCounter_right_envelope >  49){
@@ -879,6 +877,7 @@ window.onload = function() {
 				if (c == 0) {
 					clearInterval(myTimer);
 					document.getElementById("save_data").style.display = 'none';
+					document.getElementById("observations_div").style.display = 'block';
 					document.getElementById("start_stop").value = "start";
 					document.getElementById("start_stop").innerHTML = "START";
 					document.getElementById("start_stop").style.background = "#09c768";
@@ -889,13 +888,14 @@ window.onload = function() {
 	// Start stop interaction
 	document.getElementById("start_stop").onclick = function() {
 		// Move to the start position and configure the robot with the therapy settings
-	//	is_swalker_connected = true
+		//is_swalker_connected = true
 		if (is_swalker_connected || emg_enabled){
 			if (document.getElementById("start_stop").value == "start_calibration") {
 				if (is_dataRecorded){
 					
 					document.getElementById("start_stop").value = "countdown";
 					console.log("start_stop");
+					
 					if (is_swalker_connected){
 						// show initial position modal (start swalker rom calibrations), then change button content
 						$("#modaltherapyadviceinitialposition").modal('show');
@@ -913,6 +913,8 @@ window.onload = function() {
 									document.getElementById("start_stop").innerHTML = "START";
 									document.getElementById("start_stop").style.background = "#09c768";
 									document.getElementById("start_stop").style.borderColor = "#09c768";
+									document.getElementById("observations_div").style.display = 'block';
+
 								}
 						}	
 					}
@@ -961,6 +963,11 @@ window.onload = function() {
 			document.getElementById("save_data").innerHTML = "Datos Guardados";
 			document.getElementById("save_data").style.background = "#0968e4";
 			document.getElementById("save_data").style.display = 'none';
+			document.getElementById("observations_div").style.display = 'none';
+			
+			//update config therapy json (add observations)
+			let obs = document.getElementById("observations").value
+			socket.emit('monitoring:save_settings', obs)
 			
 			is_dataRecorded = false;
 			
@@ -1121,111 +1128,136 @@ window.onload = function() {
 	const $stop = document.querySelector('.circle');
 
 	$stop.onclick = () => {
+	
+		if(is_swalker_connected){
+			document.getElementById("direction_html").innerHTML = "Stop";
+			//document.getElementById("direction_html").innerHTML = "Right...";
+			direction_char = "s";
+			sendTraction(socket, direction_char);
 
-	  document.getElementById("direction_html").innerHTML = "Stop";
-	  //document.getElementById("direction_html").innerHTML = "Right...";
-	  direction_char = "s";
-	  sendTraction(socket, direction_char);
-
-	  document.querySelector('.circle').style.background = '#00008b';
-	  document.querySelector('.arrow_right').style.background = "#0968e4";
-	  document.querySelector('.arrow_left').style.background = "#0968e4";
-	  document.querySelector('.arrow_fordward').style.background = "#0968e4";
-	  document.querySelector('.arrow_backwards').style.background = "#0968e4";
+			document.querySelector('.circle').style.background = '#00008b';
+			document.querySelector('.arrow_right').style.background = "#0968e4";
+			document.querySelector('.arrow_left').style.background = "#0968e4";
+			document.querySelector('.arrow_fordward').style.background = "#0968e4";
+			document.querySelector('.arrow_backwards').style.background = "#0968e4";
+		} else{
+			showSwNotConnModal();
+		}
 	}
 
 	// Animate and get the selected direction of motion
 	$arrow_right.onclick = () => {
+		if(is_swalker_connected){
 
-	  document.getElementById("direction_html").innerHTML = "Girando a la derecha...";
+			document.getElementById("direction_html").innerHTML = "Girando a la derecha...";
 
-	  //document.getElementById("direction_html").innerHTML = "Right...";
-	  direction_char = "r";
-	  sendTraction(socket, direction_char);
+			//document.getElementById("direction_html").innerHTML = "Right...";
+			direction_char = "r";
+			sendTraction(socket, direction_char);
 
-	  document.querySelector('.circle').style.background = '#0968e4';
-	  document.querySelector('.arrow_right').style.background = "#00008b";
-	  document.querySelector('.arrow_left').style.background = "#0968e4";
-	  document.querySelector('.arrow_fordward').style.background = "#0968e4";
-	  document.querySelector('.arrow_backwards').style.background = "#0968e4";
+			document.querySelector('.circle').style.background = '#0968e4';
+			document.querySelector('.arrow_right').style.background = "#00008b";
+			document.querySelector('.arrow_left').style.background = "#0968e4";
+			document.querySelector('.arrow_fordward').style.background = "#0968e4";
+			document.querySelector('.arrow_backwards').style.background = "#0968e4";
 
-	  $arrow_right.animate([
-	    {left: '0'},
-	    {left: '10px'},
-	    {left: '0'}
-	  ],{
-	    duration: 700,
-	    iterations: 1
-	  });
+			$arrow_right.animate([
+				{left: '0'},
+				{left: '10px'},
+				{left: '0'}
+			],{
+				duration: 700,
+				iterations: 1
+			});
+		} else{
+			showSwNotConnModal();
+		}
 	}
 
 
 	$arrow_left.onclick = () => {
+		if(is_swalker_connected){
 
-	  document.getElementById("direction_html").innerHTML = "Girando a la izquierda...";
+			document.getElementById("direction_html").innerHTML = "Girando a la izquierda...";
 
-	  direction_char = "l";
-	  sendTraction(socket, direction_char);
+			direction_char = "l";
+			sendTraction(socket, direction_char);
 
-	  document.querySelector('.circle').style.background = '#0968e4';
-	  document.querySelector('.arrow_right').style.background = "#0968e4";
-	  document.querySelector('.arrow_left').style.background = "#00008b";
-	  document.querySelector('.arrow_fordward').style.background = "#0968e4";
-	  document.querySelector('.arrow_backwards').style.background = "#0968e4";
+			document.querySelector('.circle').style.background = '#0968e4';
+			document.querySelector('.arrow_right').style.background = "#0968e4";
+			document.querySelector('.arrow_left').style.background = "#00008b";
+			document.querySelector('.arrow_fordward').style.background = "#0968e4";
+			document.querySelector('.arrow_backwards').style.background = "#0968e4";
 
-	  $arrow_left.animate([
-	    {left: '0'},
-	    {left: '10px'},
-	    {left: '0'}
-	  ],{
-	    duration: 700,
-	    iterations: 1
-	  });
+			$arrow_left.animate([
+				{left: '0'},
+				{left: '10px'},
+				{left: '0'}
+			],{
+				duration: 700,
+				iterations: 1
+			});
+		} else{
+			showSwNotConnModal();
+		}
 	}
 	 
 	$arrow_fordward.onclick = () => {
-	  document.getElementById("direction_html").innerHTML = "Avanzando...";
-	  direction_char= "f";
-	 sendTraction(socket, direction_char);
+		if(is_swalker_connected){
 
-	  document.querySelector('.circle').style.background = '#0968e4';
-	  document.querySelector('.arrow_right').style.background = "#0968e4";
-	  document.querySelector('.arrow_left').style.background = "#0968e4";
-	  document.querySelector('.arrow_fordward').style.background = "#00008b";
-	  document.querySelector('.arrow_backwards').style.background = "#0968e4";
+			document.getElementById("direction_html").innerHTML = "Avanzando...";
+			direction_char= "f";
+			sendTraction(socket, direction_char);
 
-	  $arrow_fordward.animate([
-	    {left: '0'},
-	    {left: '10px'},
-	    {left: '0'}
-	  ],{
-	    duration: 700,
-	    iterations: 1
-	  });
+			document.querySelector('.circle').style.background = '#0968e4';
+			document.querySelector('.arrow_right').style.background = "#0968e4";
+			document.querySelector('.arrow_left').style.background = "#0968e4";
+			document.querySelector('.arrow_fordward').style.background = "#00008b";
+			document.querySelector('.arrow_backwards').style.background = "#0968e4";
+
+			$arrow_fordward.animate([
+				{left: '0'},
+				{left: '10px'},
+				{left: '0'}
+			],{
+				duration: 700,
+				iterations: 1
+			});
+		} else{
+			showSwNotConnModal();
+		}
 	}
 
 	$arrow_backwards.onclick = () => {
+		if(is_swalker_connected){
+			document.getElementById("direction_html").innerHTML = "Retrocediendo...";
+			direction_char = "b";
+			sendTraction(socket, direction_char);
 
-	  document.getElementById("direction_html").innerHTML = "Retrocediendo...";
-	  direction_char = "b";
-	  sendTraction(socket, direction_char);
+			document.querySelector('.circle').style.background = '#0968e4';
+			document.querySelector('.arrow_right').style.background = "#0968e4";
+			document.querySelector('.arrow_left').style.background = "#0968e4";
+			document.querySelector('.arrow_fordward').style.background = "#0968e4";
+			document.querySelector('.arrow_backwards').style.background = "#00008b";
 
-	  document.querySelector('.circle').style.background = '#0968e4';
-	  document.querySelector('.arrow_right').style.background = "#0968e4";
-	  document.querySelector('.arrow_left').style.background = "#0968e4";
-	  document.querySelector('.arrow_fordward').style.background = "#0968e4";
-	  document.querySelector('.arrow_backwards').style.background = "#00008b";
-
-	  $arrow_backwards.animate([
-	    {left: '0'},
-	    {left: '10px'},
-	    {left: '0'}
-	  ],{
-	    duration: 700,
-	    iterations: 1
-	  });
+			$arrow_backwards.animate([
+				{left: '0'},
+				{left: '10px'},
+				{left: '0'}
+			],{
+				duration: 700,
+				iterations: 1
+			});
+		} else{
+			showSwNotConnModal();
+		}
 	}	
-
+	
+	function showSwNotConnModal(){
+		$("#modalSwNotConn").modal('show');
+	};
+		
+		
 	// Empty joint graphs
 	function emptyJointGraphs() {
 		//update counters
@@ -1340,6 +1372,7 @@ socket.on('monitoring:connection_status', (data) => {
 // Send wheels velocity to the server
 function sendTraction(socket, direction){   
     // Send data to server
+    
     socket.emit('traction:message', {
         direction_char: direction
     })

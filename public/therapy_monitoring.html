@@ -34,7 +34,7 @@
                     <div class="modal-body">
                         <div class="container card shadow-lg o-hidden border-0 my-5 p-5">
                             <div class="text-center">
-                                <h3 class="text-dark mb-4">La terapia va a finalizar si cambias de página..</h3>
+                                <h3 class="text-dark mb-4">La terapia va a finalizar si cambias de página...</h3>
                             </div>
                             <div class="text-center">
                                 <button id="continue-therapy" style = "background-color: hsla(120, 100%, 25%, 0.8);" class="btn btn-primary"> Continuar con la terapia </button>
@@ -186,6 +186,26 @@
                     </div>
                     </div>
                 </div>    
+                <!-- Modal Start Therapy Error -->
+                <div class="modal fade" id="modalSwNotConn" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                    <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                        <h5 class="modal-title" id="exampleModalLabel"> Error </h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                        </div>
+                        <div class="modal-body">
+                        <p> SWalker no detectado. Por favor, asegúrese de que el SWalker se encuentra conectado antes de iniciar la tracción. </p>
+
+                        </div>
+                        <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+                        </div>
+                    </div>
+                    </div>
+                </div>    
                 <!-- Modal pewvious therapy is still being stored -->
                 <div class="modal fade" id="modalDataNotSaved" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
                     <div class="modal-dialog" role="document">
@@ -250,10 +270,26 @@
 
                     </div>
                     -->
-                    <div class="mb-3 d-flex centered">
-						<button class="btn btn-primary " value="start_position" id="save_data" type="submit" style="background: #fd4e4e; border-color: #fd4e4e; display:none">Guardar datos</button>
-                        <button class="btn btn-primary btn-xl" value="start_calibration" id="start_stop" type="submit" style="background: #0968e4">Nueva Terapia</button>
+                    <div class="mb-3 d-flex centered" >
+						<button class="btn btn-primary " value="start_position" id="save_data" type="submit" style="margin:5px; background: #fd4e4e; border-color: #fd4e4e; display:none">Guardar datos</button>
+                        <button class="btn btn-primary btn-xl" value="start_calibration" id="start_stop" type="submit" style="margin:5px; background: #0968e4">Nueva Terapia</button>
                     </div>
+					<div class="row" style="display: flex; justify-content: space-around"  >
+						<div class="card shadow mb-12" id="observations_div" style="display:none">
+							<div class="card-body">
+								<label  >Observaciones</label>
+								<input class="form-control" style= "margin:5px" id="observations" type="text" placeholder="Escriba aquí los comentarios de la sesión...">
+							</div>
+						</div>
+
+					</div>
+                            
+                  
+                    
+                    <div class="mb-3 d-flex centered" style="padding-left:400px; padding-right:400px">
+						<input class="form-control" style= "margin:5px; display:none" id="observations" type="text" placeholder="Escriba aquí los comentarios de la sesión...">
+					</div>
+
 
                     <!-- Joint Charts-->
                     <div class="tab-pane fade show active" id="emg" role="tabpanel" aria-labelledby="emg_tabs">
