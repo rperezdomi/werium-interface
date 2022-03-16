@@ -76,14 +76,12 @@ window.onload = function(){
              document.getElementById("patients-list").value == "no_choose") {   
                 if  (document.getElementById("therapists-list").value == "no_choose") {
                     document.getElementById("empty_therapist").innerHTML = "Selecciona un terapeuta o registra uno nuevo."
-                }   
-                if  (document.getElementById("therapists-list").value != "no_choose") {
+                } else if  (document.getElementById("therapists-list").value != "no_choose") {
                     document.getElementById("empty_therapist").innerHTML = ""
                 }                 
                 if (document.getElementById("patients-list").value == "no_choose") {    
                     document.getElementById("empty_patient").innerHTML = "Selecciona un paciente o registra uno nuevo."
-                } 
-                if (document.getElementById("patients-list").value != "no_choose") {    
+                } else if (document.getElementById("patients-list").value != "no_choose") {    
                     document.getElementById("empty_patient").innerHTML = ""
                 } 
         } else {
@@ -127,16 +125,21 @@ window.onload = function(){
         // First click change colour
         if (document.getElementById("save_settings").value == "save_settings") {
 			console.log("save settings clicked")
-            if (document.getElementById("observations").value == '') { 
-                var error = "Por favor, completa los siguientes campos: ";               
+			// Añado esta variable para que en caso de que no haya observaciones se podrá acceder igual a la terapia.
+			/*if (document.getElementById("observations").value == '' ){
+				var no_observations = true;
+			}
+            if (!no_observations | no_observations) { 
+                document.getElementById("save_settings").value = "continue";
+                document.getElementById("save_settings").innerHTML = "Continuar";
+                document.getElementById("save_settings").style.background = "#4CAF50"; 
+            } else {
+				var error = "Por favor, completa los siguientes campos: ";               
 				error = error + " \n Observaciones";
                 document.getElementById("fild-undefined").innerHTML = error;
                 $("#modal-fild-undefined").modal('show');
-            } else {
-                document.getElementById("save_settings").value = "continue";
-                document.getElementById("save_settings").innerHTML = "Continuar";
-                document.getElementById("save_settings").style.background = "#4CAF50";                 
-            }
+                                
+            }*/
             document.getElementById("save_settings").value = "continue";
 			document.getElementById("save_settings").innerHTML = "Continuar";
 			document.getElementById("save_settings").style.background = "#4CAF50";    
@@ -145,6 +148,7 @@ window.onload = function(){
             // Send data to server
             var d = new Date();
             console.log("lets save settings");
+            console.log(document.getElementById("velocity_value").value);
             socket.emit('settings:save_settings', {
                 date: d.getTime(),
                 therapist_name: document.getElementById("therapists-list").value,
@@ -155,7 +159,7 @@ window.onload = function(){
                 use_swalker: use_swalker_boolean,
                 gait_velocity: document.getElementById("velocity_value").value,
                 pbws: "0",                 
-                observations: document.getElementById("observations").value,
+                //observations: document.getElementById("observations").value,
             })
             if (use_swalker_boolean){
             	$("#modaltransferpatient").modal('show');
