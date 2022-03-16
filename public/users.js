@@ -217,6 +217,7 @@ socket.on('datostabla', function(datas) {
             },
             orderable: false
              },
+             {data: 'idtable_session'},
             { data: 'date' },
             { data: 'NombrePaciente' },
             { data: 'ApellidoPaciente'},
@@ -328,12 +329,16 @@ socket.on('patientdata',function(datapatient){
           { data: 'NombrePaciente' },
           { data: 'ApellidoPaciente'},
           { data: 'patiente_age'},
+          { data: 'patient_gender'},
           { data: 'patiente_weight'},
+          { data: 'patient_height'},
           { data: 'leg_length'},
+          { data: 'patient_active_rom'},
           { data: 'hip_joint'},
           { data: 'surgery'},
           { data: 'estado_fisico'},
           { data: 'estado_cognitivo'},
+          
           ],
           
   });
@@ -368,14 +373,23 @@ socket.on('patientdata',function(datapatient){
       let patsurgery = document.getElementById("surgery").value;
       let patestadofisico = document.getElementById("estado_fisico").value;
       let patestadocognitivo = document.getElementById("estado_cognitivo").value;
-      socket.emit('insertPatient',[patfname, patlname, patage, patweight, patleglength, patestadofisico, patestadocognitivo, patsurgery, pathipjoint]);
+      let patheight = document.getElementById("HeightPatient").value;
+      let patmaxActiveRom = document.getElementById("activeRom").value;
+      let patgender = document.getElementById("gender").value;
+      socket.emit('insertPatient',[patfname, patlname, patage, patweight, patleglength, patestadofisico, patestadocognitivo, patsurgery, pathipjoint, patheight, patmaxActiveRom, patgender]);
       //location.reload(true);
+      console.log("hola");
+      
+      
       $('#patientsList').DataTable().row.add({
           'NombrePaciente': patfname,
           'ApellidoPaciente': patlname,
           'patiente_age': patage,
+          'patient_gender': patgender,
           'patiente_weight': patweight,
+          'patient_height': patheight,
           'leg_length': patleglength,
+          'patient_active_rom': patmaxActiveRom,
           'estado_fisico': patestadofisico,
           'estado_cognitivo': patestadocognitivo,
           'surgery': patsurgery,
@@ -427,6 +441,9 @@ socket.on('patientdata',function(datapatient){
       document.getElementById("editsurgery").value =  checkeds[0].surgery;
       document.getElementById("editestado_fisico").value =  checkeds[0].estado_fisico;
       document.getElementById("editestado_cognitivo").value =  checkeds[0].estado_cognitivo;
+      document.getElementById("editHeightPatient").value =  checkeds[0].patient_height;
+      document.getElementById("editActiveRom").value =  checkeds[0].patient_active_rom;
+      document.getElementById("editGender").value =  checkeds[0].patient_gender;
  
     })
 
@@ -452,14 +469,21 @@ socket.on('patientdata',function(datapatient){
       checkeds[0].surgery = document.getElementById("editsurgery").value;
       checkeds[0].estado_fisico = document.getElementById("editestado_fisico").value;
       checkeds[0].estado_cognitivo = document.getElementById("editestado_cognitivo").value;
+      checkeds[0].patient_height = document.getElementById("editHeightPatient").value;
+      checkeds[0].patient_gender = document.getElementById("editGender").value;
+      checkeds[0].max_active_rom = document.getElementById("editActiveRom").value;
+      
 
       dt.row(indexrow).remove().draw();
       $('#patientsList').DataTable().row.add({
         'NombrePaciente': checkeds[0].NombrePaciente,
         'ApellidoPaciente': checkeds[0].ApellidoPaciente,
         'patiente_age': checkeds[0].patiente_age,
-        'patiente_weight': checkeds[0].patiente_weight,
-        'leg_length': checkeds[0].leg_length,
+        'patient_gender': checkeds[0].patient_gender,
+	    'patiente_weight': checkeds[0].patiente_weight,
+	    'patient_height': checkeds[0].patient_height,
+	    'leg_length': checkeds[0].leg_length,
+	    'patient_active_rom': checkeds[0].patient_active_rom,
         'estado_fisico': checkeds[0].estado_fisico,
         'estado_cognitivo': checkeds[0].estado_cognitivo,
         'surgery': checkeds[0].surgery,
@@ -627,9 +651,20 @@ socket.on('therapistdata',function(datatherapist){
     };
     
   })
+  
+  // DOWNLOAD DATA SESSION
+  $('#b_download_all_s_data').on('click', function() {
+    console.log("Download  all Data Sessions")
+    socket.emit('download_all_sessions_data');
+    
+    
+  })
 
   socket.on('open_download_sessions_link',function(idsesion){
     window.open('http://192.168.43.1:3000/downloadsessionsdata');
+  });
+  socket.on('open_download_all_sessions_link',function(idsesion){
+    window.open('http://192.168.43.1:3000/downloadallsessionsdata');
   });
 
   $('#b_download_s_conf').on('click', function() {

@@ -23,6 +23,24 @@ USE `swdb`;
 -- -----------------------------------------------------
 -- Table `swdb`.`data_sessions`
 -- -----------------------------------------------------
+  ----------------------------------------------------
+--  `emg_muscle_activity_s1` FLOAT NULL DEFAULT NULL,
+--  `muscle_binary_activation_s1` INT NULL DEFAULT NULL,
+--  `emg_muscle_activity_s2` FLOAT NULL DEFAULT NULL,
+--  `muscle_binary_activation_s2` FLOAT NULL DEFAULT NULL,
+--  `emg_muscle_activity_s3` FLOAT NULL DEFAULT NULL,
+--  `muscle_binary_activation_s3` FLOAT NULL DEFAULT NULL,
+--  `emg_muscle_activity_s4` FLOAT NULL DEFAULT NULL,
+--  `muscle_binary_activation_s4` FLOAT NULL DEFAULT NULL,
+--  `emg_muscle_activity_s5` FLOAT NULL DEFAULT NULL,
+--  `muscle_binary_activation_s5` FLOAT NULL DEFAULT NULL,
+--  `emg_muscle_activity_s6` FLOAT NULL DEFAULT NULL,
+--  `muscle_binary_activation_s6` FLOAT NULL DEFAULT NULL,
+--  `emg_muscle_activity_s7` FLOAT NULL DEFAULT NULL,
+--  `muscle_binary_activation_s7` FLOAT NULL DEFAULT NULL,
+-- `emg_muscle_activity_s8` FLOAT NULL DEFAULT NULL,
+-- `muscle_binary_activation_s8` FLOAT NULL DEFAULT NULL,
+  --------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `swdb`.`data_sessions` (
   `iddata_sessions` INT NOT NULL AUTO_INCREMENT,
   `idSesion` INT NULL DEFAULT NULL,
@@ -31,28 +49,8 @@ CREATE TABLE IF NOT EXISTS `swdb`.`data_sessions` (
   `right_hip` FLOAT NULL DEFAULT NULL,
   `weight_gauge` FLOAT NULL DEFAULT NULL,
   `direction` VARCHAR(45) NULL DEFAULT NULL,
-  `emg_muscle_activity_s1` FLOAT NULL DEFAULT NULL,
-  `muscle_binary_activation_s1` INT NULL DEFAULT NULL,
-  `emg_muscle_activity_s2` FLOAT NULL DEFAULT NULL,
-  `muscle_binary_activation_s2` FLOAT NULL DEFAULT NULL,
-  `emg_muscle_activity_s3` FLOAT NULL DEFAULT NULL,
-  `muscle_binary_activation_s3` FLOAT NULL DEFAULT NULL,
-  `emg_muscle_activity_s4` FLOAT NULL DEFAULT NULL,
-  `muscle_binary_activation_s4` FLOAT NULL DEFAULT NULL,
-  `emg_muscle_activity_s5` FLOAT NULL DEFAULT NULL,
-  `muscle_binary_activation_s5` FLOAT NULL DEFAULT NULL,
-  `emg_muscle_activity_s6` FLOAT NULL DEFAULT NULL,
-  `muscle_binary_activation_s6` FLOAT NULL DEFAULT NULL,
-  `emg_muscle_activity_s7` FLOAT NULL DEFAULT NULL,
-  `muscle_binary_activation_s7` FLOAT NULL DEFAULT NULL,
-  `emg_muscle_activity_s8` FLOAT NULL DEFAULT NULL,
-  `muscle_binary_activation_s8` FLOAT NULL DEFAULT NULL,
   `accX_s7` FLOAT NULL DEFAULT NULL,
-  `accY_s7` FLOAT NULL DEFAULT NULL,
-  `accZ_s7` FLOAT NULL DEFAULT NULL,
   `accX_s3` FLOAT NULL DEFAULT NULL,
-  `accY_s3` FLOAT NULL DEFAULT NULL,
-  `accZ_s3` FLOAT NULL DEFAULT NULL,
    PRIMARY KEY (`iddata_sessions`))
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8mb4
@@ -67,7 +65,10 @@ CREATE TABLE IF NOT EXISTS `swdb`.`tabla_pacientes` (
   `NombrePaciente` VARCHAR(45) NULL DEFAULT NULL,
   `ApellidoPaciente` VARCHAR(45) NULL DEFAULT NULL,
   `patiente_age` VARCHAR(45) NULL DEFAULT NULL,
-  `patiente_weight`VARCHAR(45) NULL DEFAULT NULL,
+  `patient_gender` VARCHAR(45) NULL DEFAULT NULL,
+  `patient_active_rom` VARCHAR(45) NULL DEFAULT NULL,
+  `patiente_weight` VARCHAR(45) NULL DEFAULT NULL,
+  `patient_height` VARCHAR(45) NULL DEFAULT NULL,
   `leg_length` VARCHAR(45) NULL DEFAULT NULL,
   `estado_fisico` VARCHAR(45) NULL DEFAULT NULL,
   `estado_cognitivo` VARCHAR(45) NULL DEFAULT NULL,
@@ -75,7 +76,6 @@ CREATE TABLE IF NOT EXISTS `swdb`.`tabla_pacientes` (
   `hip_joint`  VARCHAR(45) NULL DEFAULT NULL,
   PRIMARY KEY (`idtabla_pacientes`))
 ENGINE = InnoDB
-AUTO_INCREMENT = 13
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_unicode_ci;
 
@@ -91,11 +91,10 @@ CREATE TABLE IF NOT EXISTS `swdb`.`tabla_sesion` (
   `NumberSession` INT NULL DEFAULT NULL,
   `idTerapeusta` INT NULL DEFAULT NULL,
   `gait_velocity` VARCHAR(45) NULL DEFAULT NULL,
-  `observations` VARCHAR(45) NULL DEFAULT NULL,
+  `observations` VARCHAR(500) NULL DEFAULT NULL,
 
   PRIMARY KEY (`idtable_session`))
 ENGINE = InnoDB
-AUTO_INCREMENT = 5
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_unicode_ci;
 
@@ -110,7 +109,6 @@ CREATE TABLE IF NOT EXISTS `swdb`.`tabla_terapeutas` (
   `Centro` VARCHAR(45) NULL DEFAULT NULL,
   PRIMARY KEY (`idtabla_terapeutas`))
 ENGINE = InnoDB
-AUTO_INCREMENT = 5
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_unicode_ci;
 
